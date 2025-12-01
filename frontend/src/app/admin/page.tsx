@@ -121,7 +121,7 @@ export default function AdminDashboard() {
                                         Edit
                                     </Link>
                                     <button
-                                        onClick={() => handleDelete(product._id)}
+                                        onClick={() => product._id && handleDelete(product._id)}
                                         className="text-red-600 hover:text-red-900"
                                     >
                                         Delete

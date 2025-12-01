@@ -1,25 +1,57 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import bcrypt from 'bcryptjs';
-
-// Load environment variables from .env.local
-const envPath = path.resolve(process.cwd(), '.env.local');
-if (fs.existsSync(envPath)) {
-    const envConfig = fs.readFileSync(envPath, 'utf-8');
-    envConfig.split('\n').forEach(line => {
-        const parts = line.split('=');
-        if (parts.length >= 2) {
-            const key = parts[0].trim();
-            const value = parts.slice(1).join('=').trim().replace(/^["']|["']$/g, '');
-            if (key && value) {
-                process.env[key] = value;
-            }
-        }
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
-}
-
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const client_1 = require("@prisma/client");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const dotenv = __importStar(require("dotenv"));
+dotenv.config();
+const prisma = new client_1.PrismaClient();
 const categories = ['Electronics', 'Fashion', 'Home', 'Sports', 'Books', 'Beauty'];
-const productTypes: any = {
+const productTypes = {
     Electronics: ['Laptop', 'Smartphone', 'Headphones', 'Camera', 'Tablet', 'Smartwatch', 'Monitor'],
     Fashion: ['T-Shirt', 'Jeans', 'Sneakers', 'Jacket', 'Dress', 'Watch', 'Sunglasses'],
     Home: ['Sofa', 'Lamp', 'Rug', 'Chair', 'Table', 'Cushion', 'Vase'],
@@ -27,10 +59,8 @@ const productTypes: any = {
     Books: ['Novel', 'Textbook', 'Magazine', 'Comic Book', 'Cookbook', 'Biography'],
     Beauty: ['Lipstick', 'Perfume', 'Face Cream', 'Shampoo', 'Nail Polish', 'Mascara'],
 };
-
 const adjectives = ['Premium', 'Luxury', 'Modern', 'Classic', 'Elegant', 'Stylish', 'Professional', 'Comfortable'];
-
-const productImages: { [key: string]: string } = {
+const productImages = {
     'Laptop': 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80',
     'Smartphone': 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&q=80',
     'Headphones': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80',
@@ -71,8 +101,7 @@ const productImages: { [key: string]: string } = {
     'Nail Polish': 'https://images.unsplash.com/photo-1610992015732-2449b76344bc?w=800&q=80',
     'Mascara': 'https://images.unsplash.com/photo-1631214524020-7e18db9a8f92?w=800&q=80',
 };
-
-function generateProducts(count: number) {
+function generateProducts(count) {
     const products = [];
     for (let i = 0; i < count; i++) {
         const category = categories[Math.floor(Math.random() * categories.length)];
@@ -80,7 +109,6 @@ function generateProducts(count: number) {
         const type = typeList[Math.floor(Math.random() * typeList.length)];
         const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
         const productImage = productImages[type] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80';
-
         products.push({
             name: `${adjective} ${type}`,
             description: `This is a high-quality ${type.toLowerCase()} perfect for your daily needs. It features a ${adjective.toLowerCase()} design and durable construction.`,
@@ -92,60 +120,51 @@ function generateProducts(count: number) {
     }
     return products;
 }
-
-async function seed() {
-    try {
-        console.log('Connecting to database...');
-        // Dynamic imports to ensure env vars are loaded first
-        const dbConnect = (await import('../src/lib/db')).default;
-        const Product = (await import('../src/models/Product')).default;
-        const User = (await import('../src/models/User')).default;
-        const Order = (await import('../src/models/Order')).default;
-        const Cart = (await import('../src/models/Cart')).default;
-
-        await dbConnect();
-        console.log('Connected!');
-
-        console.log('Clearing existing data...');
-        await Promise.all([
-            Product.deleteMany({}),
-            User.deleteMany({}),
-            Order.deleteMany({}),
-            Cart.deleteMany({}),
-        ]);
-        console.log('Data cleared!');
-
-        console.log('Creating users...');
-        const hashedPassword = await bcrypt.hash('password123', 10);
-
-        await User.create([
-            {
-                name: 'Admin User',
-                email: 'admin@quickkart.com',
-                password: hashedPassword,
-                role: 'admin',
-            },
-            {
-                name: 'Demo User',
-                email: 'user@quickkart.com',
-                password: hashedPassword,
-                role: 'user',
-            },
-        ]);
-        console.log('Users created: admin@quickkart.com, user@quickkart.com (password123)');
-
-        console.log('Generating products...');
-        const products = generateProducts(40);
-
-        console.log('Inserting products...');
-        await Product.insertMany(products);
-
-        console.log('Successfully seeded database!');
-        process.exit(0);
-    } catch (error) {
-        console.error('Error seeding database:', error);
-        process.exit(1);
-    }
+function seed() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            console.log('Connecting to database...');
+            console.log('Connected!');
+            console.log('Clearing existing data...');
+            yield prisma.orderItem.deleteMany({});
+            yield prisma.cartItem.deleteMany({});
+            yield prisma.order.deleteMany({});
+            yield prisma.cart.deleteMany({});
+            yield prisma.product.deleteMany({});
+            yield prisma.user.deleteMany({});
+            console.log('Data cleared!');
+            console.log('Creating users...');
+            const hashedPassword = yield bcryptjs_1.default.hash('password123', 10);
+            yield prisma.user.createMany({
+                data: [
+                    {
+                        name: 'Admin User',
+                        email: 'admin@quickkart.com',
+                        password: hashedPassword,
+                        role: 'admin',
+                    },
+                    {
+                        name: 'Demo User',
+                        email: 'user@quickkart.com',
+                        password: hashedPassword,
+                        role: 'user',
+                    },
+                ],
+            });
+            console.log('Users created: admin@quickkart.com, user@quickkart.com (password123)');
+            console.log('Generating products...');
+            const products = generateProducts(40);
+            console.log('Inserting products...');
+            yield prisma.product.createMany({ data: products });
+            console.log('Successfully seeded database!');
+            yield prisma.$disconnect();
+            process.exit(0);
+        }
+        catch (error) {
+            console.error('Error seeding database:', error);
+            yield prisma.$disconnect();
+            process.exit(1);
+        }
+    });
 }
-
 seed();
