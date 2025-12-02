@@ -3,9 +3,12 @@ import { prisma } from '../server';
 
 export const getProducts = async (req: Request, res: Response) => {
     try {
+        console.log('Fetching products...');
         const products = await prisma.product.findMany();
+        console.log(`Fetched ${products.length} products`);
         res.json(products);
     } catch (error) {
+        console.error('Error fetching products:', error);
         res.status(500).json({ message: 'Error fetching products', error });
     }
 };

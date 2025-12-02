@@ -12,23 +12,32 @@ const PORT = process.env.PORT || 5000;
 // CORS configuration for production
 const allowedOrigins = [
     'http://localhost:3000',
-    process.env.FRONTEND_URL || 'https://your-frontend-name.vercel.app'
+    'https://your-frontend-name.vercel.app'
 ];
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
+        console.log('Request Origin:', origin);
+
         if (!origin) return callback(null, true);
 
-        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
             callback(null, true);
         } else {
+            console.log('Blocked by CORS:', origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true
 }));
 app.use(express.json());
+
+// Global request logger
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    console.log('Body:', req.body);
+    next();
+});
 
 // Basic health check
 app.get('/', (req, res) => {
@@ -45,7 +54,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 
-app.listen(PORT, () => {
+app.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
