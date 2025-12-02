@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 5000;
 // CORS configuration for production
 const allowedOrigins = [
     'http://localhost:3000',
-    'https://your-frontend-name.vercel.app'
+    'https://ecommercee-webiste-jpdzmd2vj-anurag-kumars-projects-8fa7e22f.vercel.app/'
 ];
 
 app.use(cors({
