@@ -2,27 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import api from '@/lib/api';
+import api from '../lib/api';
 
-interface Product {
-    id?: string;
-    _id?: string;
-    name: string;
-    description: string;
-    price: number;
-    category: string;
-    image: string;
-    stock: number;
-}
-
-interface ProductFormProps {
-    initialData?: Product;
-    isEdit?: boolean;
-}
-
-export default function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
+export default function ProductForm({ initialData, isEdit = false }) {
     const router = useRouter();
-    const [formData, setFormData] = useState<Product>({
+    const [formData, setFormData] = useState({
         name: '',
         description: '',
         price: 0,
@@ -39,7 +23,7 @@ export default function ProductForm({ initialData, isEdit = false }: ProductForm
         }
     }, [initialData]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
@@ -47,7 +31,7 @@ export default function ProductForm({ initialData, isEdit = false }: ProductForm
         }));
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
@@ -61,7 +45,7 @@ export default function ProductForm({ initialData, isEdit = false }: ProductForm
             router.push('/admin');
             router.refresh();
         } catch (err) {
-            setError((err as any).response?.data?.message || 'Something went wrong');
+            setError(err.response?.data?.message || 'Something went wrong');
         } finally {
             setLoading(false);
         }

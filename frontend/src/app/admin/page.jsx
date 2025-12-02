@@ -3,24 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import api from '@/lib/api';
+import api from '../../lib/api';
 import Link from 'next/link';
-
-interface Product {
-    id: string;
-    _id?: string;
-    name: string;
-    description: string;
-    price: number;
-    category: string;
-    image: string;
-    stock: number;
-}
 
 export default function AdminDashboard() {
     const { data: session, status } = useSession();
     const router = useRouter();
-    const [products, setProducts] = useState<Product[]>([]);
+    const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -48,7 +37,7 @@ export default function AdminDashboard() {
         }
     }, [session]);
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (id) => {
         if (!confirm('Are you sure you want to delete this product?')) return;
 
         try {
@@ -98,8 +87,8 @@ export default function AdminDashboard() {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {products.map((product) => (
-                            <tr key={product._id}>
+                        {products.map((product, index) => (
+                            <tr key={product._id || product.id || index}>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm font-medium text-gray-900">
                                         {product.name}

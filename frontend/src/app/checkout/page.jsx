@@ -1,23 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import api from '@/lib/api';
+import api from '../../lib/api';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-
-interface CartItem {
-    product: {
-        name: string;
-        price: number;
-    };
-    quantity: number;
-    _id: string;
-}
 
 export default function CheckoutPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
-    const [cartItems, setCartItems] = useState<CartItem[]>([]);
+    const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
 
@@ -78,8 +69,8 @@ export default function CheckoutPage() {
                 <div className="p-6">
                     <h2 className="text-xl font-semibold mb-4 text-black">Order Summary</h2>
                     <div className="space-y-4">
-                        {cartItems.map((item) => (
-                            <div key={item._id} className="flex text-black justify-between">
+                        {cartItems.map((item, index) => (
+                            <div key={item._id || item.id || index} className="flex text-black justify-between">
                                 <span>
                                     {item.product.name} x {item.quantity}
                                 </span>

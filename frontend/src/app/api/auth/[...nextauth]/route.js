@@ -1,7 +1,7 @@
-import NextAuth, { NextAuthOptions } from 'next-auth';
+import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
-export const authOptions: NextAuthOptions = {
+export const authOptions = {
     providers: [
         CredentialsProvider({
             name: 'Credentials',
@@ -15,7 +15,7 @@ export const authOptions: NextAuthOptions = {
                 }
 
                 try {
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/login`, {
+                    const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000') + '/api'}/auth/login`, {
                         method: 'POST',
                         body: JSON.stringify(credentials),
                         headers: { "Content-Type": "application/json" }
@@ -32,7 +32,7 @@ export const authOptions: NextAuthOptions = {
                     }
 
                     return null;
-                } catch (error: any) {
+                } catch (error) {
                     throw new Error(error.message || 'Something went wrong');
                 }
             },
@@ -43,7 +43,7 @@ export const authOptions: NextAuthOptions = {
             if (user) {
                 token.id = user.id;
                 token.role = user.role;
-                token.accessToken = (user as any).accessToken;
+                token.accessToken = user.accessToken;
             }
             return token;
         },
@@ -51,7 +51,7 @@ export const authOptions: NextAuthOptions = {
             if (session.user) {
                 session.user.id = token.id;
                 session.user.role = token.role;
-                (session as any).accessToken = token.accessToken;
+                session.accessToken = token.accessToken;
             }
             return session;
         },

@@ -1,29 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import api from '@/lib/api';
+import api from '../../lib/api';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Package, Calendar, DollarSign } from 'lucide-react';
 
-interface OrderItem {
-    product: string;
-    quantity: number;
-    price: number;
-}
-
-interface Order {
-    _id: string;
-    totalAmount: number;
-    status: string;
-    createdAt: string;
-    items: OrderItem[];
-}
-
 export default function OrdersPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
-    const [orders, setOrders] = useState<Order[]>([]);
+    const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -72,8 +58,8 @@ export default function OrdersPage() {
                 </div>
             ) : (
                 <div className="space-y-6">
-                    {orders.map((order) => (
-                        <div key={order._id} className="group bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 hover:border-blue-200">
+                    {orders.map((order, index) => (
+                        <div key={order._id || order.id || index} className="group bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 hover:border-blue-200">
                             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                                 <div className="space-y-2">
                                     <div className="flex items-center space-x-2 text-gray-600 group-hover:text-blue-600 transition-colors duration-300">
@@ -96,9 +82,9 @@ export default function OrdersPage() {
                                         <DollarSign className="w-5 h-5 text-blue-600" />
                                         <p className="font-bold text-3xl text-gray-900">${order.totalAmount.toFixed(2)}</p>
                                     </div>
-                                    <span className={`inline-block px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide shadow-md transition-all duration-300 transform group-hover:scale-105 ${order.status === 'delivered' ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700' :
-                                        order.status === 'shipped' ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700' :
-                                            'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-600 hover:to-yellow-700'
+                                    <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold uppercase ${order.status === 'delivered' ? 'bg-green-600 text-white' :
+                                        order.status === 'shipped' ? 'bg-blue-600 text-white' :
+                                            'bg-yellow-500 text-white'
                                         }`}>
                                         {order.status}
                                     </span>

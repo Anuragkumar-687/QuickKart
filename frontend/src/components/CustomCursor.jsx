@@ -9,7 +9,7 @@ export default function CustomCursor() {
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
-        const updateCursor = (e: MouseEvent) => {
+        const updateCursor = (e) => {
             setPosition({ x: e.clientX, y: e.clientY });
 
             // Dot follows immediately

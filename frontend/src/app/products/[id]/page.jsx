@@ -1,25 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import api from '@/lib/api';
+import api from '../../../lib/api';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
-interface Product {
-    id: string;
-    _id?: string;
-    name: string;
-    description: string;
-    price: number;
-    category: string;
-    image: string;
-    stock: number;
-}
-
 export default function ProductDetailsPage() {
     const params = useParams();
-    const [product, setProduct] = useState<Product | null>(null);
+    const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 

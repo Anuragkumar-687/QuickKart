@@ -1,30 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import api from '@/lib/api';
+import api from '../../lib/api';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Trash2 } from 'lucide-react';
 
-interface CartItem {
-    product: {
-        _id: string;
-        name: string;
-        price: number;
-        image: string;
-    };
-    quantity: number;
-    _id: string;
-}
+import { useCart } from '../../context/CartContext';
 
 export default function CartPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
-    const [cartItems, setCartItems] = useState<CartItem[]>([]);
+    const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [removingId, setRemovingId] = useState<string | null>(null);
+    const [removingId, setRemovingId] = useState(null);
+    const { fetchCartCount } = useCart();
 
     useEffect(() => {
         if (status === 'unauthenticated') {
@@ -37,6 +29,7 @@ export default function CartPage() {
             try {
                 const res = await api.get('/cart');
                 setCartItems(res.data.items || []);
+                fetchCartCount(); // Sync count when viewing cart
             } catch (error) {
                 console.error('Failed to fetch cart');
             } finally {
@@ -49,7 +42,7 @@ export default function CartPage() {
         }
     }, [status]);
 
-    const handleRemoveItem = async (itemId: string) => {
+    const handleRemoveItem = async (itemId) => {
         if (!confirm('Are you sure you want to remove this item from your cart?')) {
             return;
         }
@@ -58,6 +51,7 @@ export default function CartPage() {
         try {
             const res = await api.delete(`/cart/${itemId}`);
             setCartItems(res.data.items || []);
+            fetchCartCount(); // Update global count
         } catch (error) {
             alert('Failed to remove item');
         } finally {
@@ -103,7 +97,7 @@ export default function CartPage() {
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8 border border-gray-100">
                 <div className="p-6 space-y-6">
                     {cartItems.map((item) => (
-                        <div key={item._id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b pb-6 last:border-b-0 last:pb-0 gap-4">
+                        <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b pb-6 last:border-b-0 last:pb-0 gap-4">
                             <div className="flex items-center space-x-4 flex-1">
                                 <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
                                     <Image
@@ -114,7 +108,7 @@ export default function CartPage() {
                                     />
                                 </div>
                                 <div className="flex-1">
-                                    <Link href={`/products/${item.product._id}`} className="font-bold text-lg hover:text-blue-600 transition-colors text-gray-900 block mb-1">
+                                    <Link href={`/products/${item.product.id}`} className="font-bold text-lg hover:text-blue-600 transition-colors text-gray-900 block mb-1">
                                         {item.product.name}
                                     </Link>
                                     <p className="text-gray-600 font-medium">${item.product.price.toFixed(2)} each</p>
@@ -128,12 +122,12 @@ export default function CartPage() {
                                     ${(item.product.price * item.quantity).toFixed(2)}
                                 </span>
                                 <button
-                                    onClick={() => handleRemoveItem(item._id)}
-                                    disabled={removingId === item._id}
+                                    onClick={() => handleRemoveItem(item.id)}
+                                    disabled={removingId === item.id}
                                     className="bg-red-500 text-white p-3 rounded-lg hover:bg-red-600 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                     title="Remove from cart"
                                 >
-                                    {removingId === item._id ? (
+                                    {removingId === item.id ? (
                                         <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
                                     ) : (
                                         <Trash2 className="w-5 h-5" />
@@ -143,7 +137,7 @@ export default function CartPage() {
                         </div>
                     ))}
                 </div>
-                <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 border-t-2 border-gray-200">
+                <div className="bg-gray-50 p-6 border-t border-gray-200">
                     <div className="flex justify-between items-center max-w-md ml-auto">
                         <span className="text-2xl font-bold text-gray-900">Total:</span>
                         <span className="text-3xl font-bold text-blue-600">${total.toFixed(2)}</span>
@@ -154,7 +148,7 @@ export default function CartPage() {
             <div className="flex justify-end">
                 <Link
                     href="/checkout"
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-10 py-4 rounded-full hover:from-blue-700 hover:to-purple-700 transition-all font-bold text-lg shadow-lg hover:shadow-2xl transform hover:scale-105"
+                    className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
                 >
                     Proceed to Checkout →
                 </Link>
