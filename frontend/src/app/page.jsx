@@ -12,21 +12,29 @@ export default function Home() {
     const [featuredProducts, setFeaturedProducts] = useState([]);
     const [category, setCategory] = useState('All Categories');
     const [sortBy, setSortBy] = useState('Price: Low to High');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const heroRef = useRef(null);
     const productsRef = useRef(null);
 
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const res = await api.get('/products');
-                setFeaturedProducts(res.data);
+                const res = await api.get(`/products?page=${page}&limit=12`);
+                if (res.data.products) {
+                    setFeaturedProducts(res.data.products);
+                    setTotalPages(res.data.totalPages);
+                } else {
+                    // Fallback for backward compatibility or if API structure hasn't updated yet
+                    setFeaturedProducts(Array.isArray(res.data) ? res.data : []);
+                }
             } catch (error) {
                 console.error('Failed to fetch products:', error);
             }
         };
 
         fetchProducts();
-    }, []);
+    }, [page]);
 
     // GSAP Animations
     useEffect(() => {
@@ -178,6 +186,35 @@ export default function Home() {
                         </div>
                     )}
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="flex justify-center items-center mt-12 gap-4">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className={`px-6 py-2 rounded-full border ${page === 1
+                                    ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                                    : 'border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white transition-colors'
+                                }`}
+                        >
+                            Previous
+                        </button>
+                        <span className="text-gray-600 font-medium">
+                            Page {page} of {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className={`px-6 py-2 rounded-full border ${page === totalPages
+                                    ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                                    : 'border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white transition-colors'
+                                }`}
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
             </section>
         </div>
     );

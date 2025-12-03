@@ -17,14 +17,7 @@ export function CartProvider({ children }) {
         }
         try {
             const res = await api.get('/cart');
-            // Assuming the API returns the cart with items
             const items = res.data.items || [];
-            // Calculate total quantity or just number of unique items? 
-            // Flipkart shows number of unique items usually, or total qty. 
-            // Let's do total quantity for now as it's more informative, or length if preferred.
-            // User said "number like in flipkart". Flipkart usually shows '1' for 1 item.
-            // Let's count unique items (items.length) as is common in many navbars, 
-            // but total quantity is also fine. Let's stick to items.length for now as it's simpler to visualize "3 items in cart".
             setCartCount(items.length);
         } catch (error) {
             console.error('Failed to fetch cart count', error);
