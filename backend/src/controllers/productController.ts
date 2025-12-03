@@ -3,28 +3,10 @@ import { prisma } from '../server';
 
 export const getProducts = async (req: Request, res: Response) => {
     try {
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || 12;
-        const skip = (page - 1) * limit;
-
-        console.log(`Fetching products - Page: ${page}, Limit: ${limit}`);
-
-        const [products, total] = await Promise.all([
-            prisma.product.findMany({
-                skip,
-                take: limit,
-            }),
-            prisma.product.count(),
-        ]);
-
+        console.log('Fetching products...');
+        const products = await prisma.product.findMany();
         console.log(`Fetched ${products.length} products`);
-
-        res.json({
-            products,
-            totalPages: Math.ceil(total / limit),
-            currentPage: page,
-            totalProducts: total
-        });
+        res.json(products);
     } catch (error) {
         console.error('Error fetching products:', error);
         res.status(500).json({ message: 'Error fetching products', error });

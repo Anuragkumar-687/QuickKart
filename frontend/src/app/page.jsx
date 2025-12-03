@@ -9,59 +9,29 @@ import gsap from 'gsap';
 
 export default function Home() {
     const { data: session } = useSession();
-
-    // Always keep arrays as arrays
     const [featuredProducts, setFeaturedProducts] = useState([]);
     const [category, setCategory] = useState('All Categories');
     const [sortBy, setSortBy] = useState('Price: Low to High');
-    const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-
     const heroRef = useRef(null);
     const productsRef = useRef(null);
 
-    // Fetch products safely
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const res = await api.get(`/products?page=${page}&limit=12`);
-                const data = res.data;
-
-                console.log("API Response: ", data);
-
-                let products = [];
-
-                // Correct API response shape
-                if (data && Array.isArray(data.products)) {
-                    products = data.products;
-                    setTotalPages(
-                        typeof data.totalPages === 'number'
-                            ? data.totalPages
-                            : 1
-                    );
-                }
-                // Fallback for older response format
-                else if (Array.isArray(data)) {
-                    products = data;
-                    setTotalPages(1);
-                }
-                else {
-                    console.error("Unexpected products response:", data);
-                }
-
-                setFeaturedProducts(products);
+                const res = await api.get('/products');
+                setFeaturedProducts(res.data);
             } catch (error) {
                 console.error('Failed to fetch products:', error);
-                setFeaturedProducts([]); // prevent undefined map
             }
         };
 
         fetchProducts();
-    }, [page]);
+    }, []);
 
-    // GSAP animations
+    // GSAP Animations
     useEffect(() => {
-        const ctx = gsap.context(() => {
+        let ctx = gsap.context(() => {
+            // Animate hero section
             gsap.from(heroRef.current, {
                 opacity: 0,
                 y: 30,
@@ -69,6 +39,7 @@ export default function Home() {
                 ease: 'power3.out'
             });
 
+            // Animate product cards when they load
             if (featuredProducts.length > 0 && productsRef.current) {
                 const cards = productsRef.current.querySelectorAll('.product-card');
                 gsap.from(cards, {
@@ -78,28 +49,24 @@ export default function Home() {
                     stagger: 0.1,
                     ease: 'power2.out',
                     delay: 0.3,
-                    clearProps: 'all'
+                    clearProps: 'all' // Ensure props are cleared after animation to prevent conflicts
                 });
             }
         });
 
-        return () => ctx.revert();
+        return () => ctx.revert(); // Cleanup
     }, [featuredProducts]);
 
     return (
         <div className="min-h-screen bg-white">
             {/* Hero Section */}
-            <section
-                ref={heroRef}
-                className="bg-white border-b border-gray-200 py-16 px-4"
-            >
+            <section ref={heroRef} className="bg-white border-b border-gray-200 py-16 px-4">
                 <div className="container mx-auto max-w-6xl">
                     <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4 tracking-tight">
                         Get Inspired
                     </h1>
                     <p className="text-lg text-gray-600 max-w-3xl leading-relaxed">
-                        Browsing for your next long-haul trip, everyday journey,
-                        or just fancy a look at what's new?
+                        Browsing for your next long-haul trip, everyday journey, or just fancy a look at what's new? From community favourites to about-to-sell-out items, see them all here.
                     </p>
                 </div>
             </section>
@@ -113,7 +80,7 @@ export default function Home() {
                             <select
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
-                                className="appearance-none bg-white border border-gray-300 rounded-full px-6 py-3 pr-10 text-sm font-medium text-gray-700"
+                                className="appearance-none bg-white border border-gray-300 rounded-full px-6 py-3 pr-10 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer transition-all"
                             >
                                 <option>All Categories</option>
                                 <option>Electronics</option>
@@ -121,6 +88,58 @@ export default function Home() {
                                 <option>Home & Garden</option>
                                 <option>Sports</option>
                             </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Color Filter */}
+                        <div className="relative">
+                            <select className="appearance-none bg-white border border-gray-300 rounded-full px-6 py-3 pr-10 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer transition-all">
+                                <option>All Colors</option>
+                                <option>Black</option>
+                                <option>White</option>
+                                <option>Gray</option>
+                                <option>Blue</option>
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Features Filter */}
+                        <div className="relative">
+                            <select className="appearance-none bg-white border border-gray-300 rounded-full px-6 py-3 pr-10 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer transition-all">
+                                <option>All Features</option>
+                                <option>Featured</option>
+                                <option>On Sale</option>
+                                <option>New Arrival</option>
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Price Filter */}
+                        <div className="relative">
+                            <select className="appearance-none bg-white border border-gray-300 rounded-full px-6 py-3 pr-10 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer transition-all">
+                                <option>All Prices</option>
+                                <option>Under $50</option>
+                                <option>$50 - $100</option>
+                                <option>$100 - $200</option>
+                                <option>Over $200</option>
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
                         </div>
 
                         {/* Sort Filter */}
@@ -128,11 +147,16 @@ export default function Home() {
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
-                                className="appearance-none bg-white border border-gray-300 rounded-full px-6 py-3 pr-10 text-sm font-medium text-gray-700"
+                                className="appearance-none bg-white border border-gray-300 rounded-full px-6 py-3 pr-10 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer transition-all"
                             >
                                 <option>Price: Low to High</option>
                                 <option>Price: High to Low</option>
                             </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -144,64 +168,16 @@ export default function Home() {
                     {featuredProducts.length === 0 ? (
                         <div className="text-center py-20">
                             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-gray-900 mx-auto mb-4"></div>
-                            <p className="text-gray-600 text-lg">
-                                Loading products...
-                            </p>
+                            <p className="text-gray-600 text-lg">Loading products...</p>
                         </div>
                     ) : (
-                        <div
-                            ref={productsRef}
-                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-                        >
-                            {Array.isArray(featuredProducts) &&
-                                featuredProducts.map((product, index) => (
-                                    <ProductCard
-                                        key={
-                                            product._id ||
-                                            product.id ||
-                                            index
-                                        }
-                                        product={product}
-                                    />
-                                ))}
+                        <div ref={productsRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {featuredProducts.map((product, index) => (
+                                <ProductCard key={product._id || product.id || index} product={product} />
+                            ))}
                         </div>
                     )}
                 </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                    <div className="flex justify-center items-center mt-12 gap-4">
-                        <button
-                            onClick={() => setPage((p) => Math.max(1, p - 1))}
-                            disabled={page === 1}
-                            className={`px-6 py-2 rounded-full border ${page === 1
-                                    ? 'border-gray-200 text-gray-400 cursor-not-allowed'
-                                    : 'border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white'
-                                }`}
-                        >
-                            Previous
-                        </button>
-
-                        <span className="text-gray-600 font-medium">
-                            Page {page} of {totalPages}
-                        </span>
-
-                        <button
-                            onClick={() =>
-                                setPage((p) =>
-                                    Math.min(totalPages, p + 1)
-                                )
-                            }
-                            disabled={page === totalPages}
-                            className={`px-6 py-2 rounded-full border ${page === totalPages
-                                    ? 'border-gray-200 text-gray-400 cursor-not-allowed'
-                                    : 'border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white'
-                                }`}
-                        >
-                            Next
-                        </button>
-                    </div>
-                )}
             </section>
         </div>
     );
