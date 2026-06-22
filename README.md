@@ -1,6 +1,6 @@
 <div align="center">
   <h1>🛒 QuickKart</h1>
-  <p>A modern, full-stack e-commerce platform built with Next.js, Express, and MongoDB.</p>
+  <p>A modern, full-stack e-commerce platform built with Next.js, Express, Prisma and MongoDB.</p>
 
   <p>
     <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
