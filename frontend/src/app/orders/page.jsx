@@ -58,13 +58,13 @@ export default function OrdersPage() {
                 </div>
             ) : (
                 <div className="space-y-6">
-                    {orders.map((order, index) => (
-                        <div key={order._id || order.id || index} className="group bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 hover:border-blue-200">
+                    {orders.map((order) => (
+                        <div key={order.id} className="group bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 hover:border-blue-200">
                             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                                 <div className="space-y-2">
                                     <div className="flex items-center space-x-2 text-gray-600 group-hover:text-blue-600 transition-colors duration-300">
                                         <Package className="w-4 h-4 transition-transform duration-300 group-hover:scale-110" />
-                                        <p className="text-sm font-semibold">Order ID: <span className="text-gray-900">{order._id}</span></p>
+                                        <p className="text-sm font-semibold">Order ID: <span className="text-gray-900">{order.id}</span></p>
                                     </div>
                                     <div className="flex items-center space-x-2 text-gray-600 group-hover:text-blue-600 transition-colors duration-300">
                                         <Calendar className="w-4 h-4 transition-transform duration-300 group-hover:scale-110" />

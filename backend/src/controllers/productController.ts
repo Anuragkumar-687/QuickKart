@@ -1,61 +1,97 @@
-import { Request, Response } from 'express';
-import { prisma } from '../server';
+import { Response, NextFunction } from 'express';
+import { AuthRequest } from '../middleware/auth';
+import productService from '../services/productService';
+import { NotFoundError } from '../lib/errors';
+import prisma from '../lib/prisma';
 
-export const getProducts = async (req: Request, res: Response) => {
+export const getProducts = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        console.log('Fetching products...');
-        const products = await prisma.product.findMany();
-        console.log(`Fetched ${products.length} products`);
-        res.json(products);
+        console.log('Fetching products with query:', req.query);
+        const filters = {
+            page: req.query.page ? Number(req.query.page) : undefined,
+            limit: req.query.limit ? Number(req.query.limit) : undefined,
+            search: req.query.search as string,
+            category: req.query.category as string,
+            sort: req.query.sort as string,
+        };
+
+        const result = await productService.getProducts(filters);
+        res.json(result);
     } catch (error) {
-        console.error('Error fetching products:', error);
-        res.status(500).json({ message: 'Error fetching products', error });
+        next(error);
     }
 };
 
-export const getProductById = async (req: Request, res: Response) => {
+export const getProductById = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const product = await prisma.product.findUnique({ where: { id } });
+        const userId = req.user?.id || null;
+        const region = (req.headers['x-region'] || req.query.region || 'US') as string;
+
+        const product = await productService.getProductById(id);
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+            throw new NotFoundError('Product not found');
         }
-        res.json(product);
+
+        // Increment view count, fire product event, track region popularity
+        await productService.incrementViewCount(id, userId, region);
+
+        // Record to recently viewed for authenticated users
+        if (userId) {
+            try {
+                await prisma.recentlyViewed.upsert({
+                    where: {
+                        userId_productId: {
+                            userId,
+                            productId: id,
+                        }
+                    },
+                    update: {
+                        viewedAt: new Date()
+                    },
+                    create: {
+                        userId,
+                        productId: id,
+                    }
+                });
+            } catch (err) {
+                console.error('Failed to upsert recently viewed:', err);
+            }
+        }
+
+        // Return latest product state
+        const updatedProduct = await productService.getProductById(id);
+        res.json(updatedProduct);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching product', error });
+        next(error);
     }
 };
 
-export const createProduct = async (req: Request, res: Response) => {
+export const createProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const product = await prisma.product.create({
-            data: req.body,
-        });
+        const product = await productService.createProduct(req.body);
         res.status(201).json(product);
     } catch (error) {
-        res.status(500).json({ message: 'Error creating product', error });
+        next(error);
     }
 };
 
-export const updateProduct = async (req: Request, res: Response) => {
+export const updateProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        const product = await prisma.product.update({
-            where: { id },
-            data: req.body,
-        });
+        const product = await productService.updateProduct(id, req.body);
         res.json(product);
     } catch (error) {
-        res.status(500).json({ message: 'Error updating product', error });
+        next(error);
     }
 };
 
-export const deleteProduct = async (req: Request, res: Response) => {
+export const deleteProduct = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
-        await prisma.product.delete({ where: { id } });
-        res.json({ message: 'Product deleted' });
+        await productService.deleteProduct(id);
+        res.json({ message: 'Product deleted successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Error deleting product', error });
+        next(error);
     }
 };

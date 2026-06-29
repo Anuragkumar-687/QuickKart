@@ -1,14 +1,16 @@
 'use client';
 
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
-import { ShoppingCart, Menu, X, User, LogOut } from 'lucide-react';
+import { ShoppingCart, Menu, X, User, LogOut, Heart } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Navbar() {
     const { data: session } = useSession();
     const { cartCount } = useCart();
+    const { wishlistCount } = useWishlist();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     return (
@@ -33,6 +35,18 @@ export default function Navbar() {
                                 Admin
                             </Link>
                         )}
+
+                        <Link href="/wishlist" className="text-gray-600 hover:text-red-600 font-medium transition-colors flex items-center gap-2 group">
+                            <div className="relative">
+                                <Heart className="w-5 h-5 group-hover:text-red-600 transition-colors" />
+                                {wishlistCount > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                                        {wishlistCount}
+                                    </span>
+                                )}
+                            </div>
+                            <span>Wishlist</span>
+                        </Link>
 
                         <Link href="/cart" className="text-gray-600 hover:text-blue-600 font-medium transition-colors flex items-center gap-2 group">
                             <div className="relative">
@@ -104,6 +118,15 @@ export default function Navbar() {
                                     Admin Dashboard
                                 </Link>
                             )}
+                            <Link href="/wishlist" className="text-gray-600 hover:text-red-600 font-medium px-2 flex items-center gap-2">
+                                <Heart className="w-5 h-5" />
+                                <span>Wishlist</span>
+                                {wishlistCount > 0 && (
+                                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                        {wishlistCount}
+                                    </span>
+                                )}
+                            </Link>
                             <Link href="/cart" className="text-gray-600 hover:text-blue-600 font-medium px-2">
                                 Cart
                             </Link>

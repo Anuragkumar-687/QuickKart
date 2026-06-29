@@ -1,15 +1,16 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../server';
+import prisma from '../lib/prisma';
+import { ValidationError, ConflictError, UnauthorizedError } from '../lib/errors';
 
-export const register = async (req: Request, res: Response) => {
+export const register = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { name, email, password } = req.body;
 
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser) {
-            return res.status(400).json({ message: 'User already exists' });
+            throw new ConflictError('User already exists');
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -22,42 +23,46 @@ export const register = async (req: Request, res: Response) => {
             },
         });
 
-        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET as string, {
-            expiresIn: '1h',
-        });
+        const token = jwt.sign(
+            { id: user.id, role: user.role },
+            (process.env.JWT_SECRET || 'fallback_secret') as string,
+            { expiresIn: '1h' }
+        );
 
-        res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+        res.status(201).json({
+            token,
+            user: { id: user.id, name: user.name, email: user.email, role: user.role }
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Something went wrong', error });
+        next(error);
     }
 };
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { email, password } = req.body;
-        console.log('Login attempt for email:', email);
 
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
-            console.log('User not found:', email);
-            return res.status(400).json({ message: 'Invalid credentials' });
+            throw new ValidationError('Invalid credentials');
         }
 
-        console.log('User found, checking password...');
         const isPasswordValid = await bcrypt.compare(password, user.password);
-        console.log('Password valid:', isPasswordValid);
-
         if (!isPasswordValid) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            throw new ValidationError('Invalid credentials');
         }
 
-        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET as string, {
-            expiresIn: '1h',
-        });
+        const token = jwt.sign(
+            { id: user.id, role: user.role },
+            (process.env.JWT_SECRET || 'fallback_secret') as string,
+            { expiresIn: '1h' }
+        );
 
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+        res.json({
+            token,
+            user: { id: user.id, name: user.name, email: user.email, role: user.role }
+        });
     } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ message: 'Something went wrong', error });
+        next(error);
     }
 };

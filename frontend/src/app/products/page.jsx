@@ -15,17 +15,20 @@ export default function ProductsPage() {
     const [selectedCategory, setSelectedCategory] = useState('All Categories');
     const [sortBy, setSortBy] = useState('Price: Low to High');
     const [searchQuery, setSearchQuery] = useState('');
+    const [categories, setCategories] = useState(['All']);
     const productsRef = useRef(null);
     const heroRef = useRef(null);
-
-    const categories = ['All', 'Electronics', 'Fashion', 'Home', 'Sports', 'Books', 'Beauty'];
 
     useEffect(() => {
         const fetchProducts = async () => {
             try {
                 const res = await api.get('/products');
-                setProducts(res.data);
-                setFilteredProducts(res.data);
+                const productsList = res.data.products || [];
+                setProducts(productsList);
+                setFilteredProducts(productsList);
+                if (res.data.categories) {
+                    setCategories(['All', ...res.data.categories]);
+                }
             } catch (err) {
                 setError('Failed to load products');
             } finally {
@@ -40,8 +43,8 @@ export default function ProductsPage() {
         let filtered = [...products];
 
         // Filter by category
-        if (selectedCategory !== 'All Categories') {
-            filtered = filtered.filter(p => p.category === selectedCategory);
+        if (selectedCategory !== 'All Categories' && selectedCategory !== 'All') {
+            filtered = filtered.filter(p => p.category.toLowerCase() === selectedCategory.toLowerCase());
         }
 
         // Filter by search query
@@ -160,15 +163,6 @@ export default function ProductsPage() {
                                 ))}
                             </select>
 
-                            <select
-                                className="appearance-none bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 pr-8 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-pointer whitespace-nowrap"
-                            >
-                                <option>All Colors</option>
-                                <option>Black</option>
-                                <option>White</option>
-                                <option>Blue</option>
-                            </select>
-
                             {/* Sort Filter */}
                             <div className="relative ml-auto">
                                 <select
@@ -216,8 +210,8 @@ export default function ProductsPage() {
                         </div>
                     ) : (
                         <div ref={productsRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {filteredProducts.map((product, index) => (
-                                <ProductCard key={product._id || product.id || index} product={product} />
+                            {filteredProducts.map((product) => (
+                                <ProductCard key={product.id} product={product} />
                             ))}
                         </div>
                     )}

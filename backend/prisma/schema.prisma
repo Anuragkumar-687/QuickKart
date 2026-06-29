@@ -8,30 +8,112 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("user") // "user" or "admin"
-  createdAt DateTime @default(now())
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  email          String           @unique
+  password       String
+  role           String           @default("user") // "user" or "admin"
+  createdAt      DateTime         @default(now())
   
-  orders    Order[]
-  cart      Cart?
+  orders         Order[]
+  cart           Cart?
+  reviews        Review[]
+  wishlist       Wishlist?
+  recentlyViewed RecentlyViewed[]
 }
 
 model Product {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  description String
-  price       Float
-  category    String
-  image       String
-  stock       Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  name             String
+  description      String
+  price            Float
+  category         String
+  image            String
+  rating           Float            @default(0)
+  stock            Int
+  source           String           @default("manual") // "dummyjson" | "fakestore" | "manual"
+  sourceId         String?                             // Original ID from external API
+  viewCount        Int              @default(0)
+  purchaseCount    Int              @default(0)
+  regionPopularity Json?                               // e.g. { "US": 42, "IN": 128 }
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
-  cartItems   CartItem[]
-  orderItems  OrderItem[]
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  reviews        Review[]
+  wishlistItems  WishlistItem[]
+  events         ProductEvent[]
+  recentlyViewed RecentlyViewed[]
+
+  @@index([category])
+  @@index([source, sourceId])
+  @@index([price])
+  @@index([rating])
+  @@index([viewCount])
+  @@index([purchaseCount])
+}
+
+model Review {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  productId String   @db.ObjectId
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating    Int      // 1-5
+  comment   String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([productId])
+  @@index([userId])
+}
+
+model Wishlist {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String         @unique @db.ObjectId
+  user      User           @relation(fields: [userId], references: [id])
+  items     WishlistItem[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model WishlistItem {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  wishlistId String   @db.ObjectId
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId  String   @db.ObjectId
+  product    Product  @relation(fields: [productId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([wishlistId, productId])
+  @@index([wishlistId])
+}
+
+model RecentlyViewed {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  productId String   @db.ObjectId
+  product   Product  @relation(fields: [productId], references: [id])
+  viewedAt  DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId, viewedAt(sort: Desc)])
+}
+
+model ProductEvent {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId String   @db.ObjectId
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String?  @db.ObjectId   // nullable for anonymous views
+  eventType String                  // "view" | "cart_add" | "purchase" | "wishlist_add"
+  metadata  Json?                   // e.g. { region: "IN", referrer: "search" }
+  createdAt DateTime @db.Date @default(now())
+
+  @@index([productId, eventType])
+  @@index([createdAt])
+  @@index([userId])
 }
 
 model Cart {
@@ -50,6 +132,9 @@ model CartItem {
   productId String   @db.ObjectId
   product   Product  @relation(fields: [productId], references: [id])
   quantity  Int
+
+  @@index([cartId])
+  @@index([productId])
 }
 
 model Order {
@@ -60,6 +145,9 @@ model Order {
   totalAmount Float
   status      String      @default("pending") // pending, processing, shipped, delivered, cancelled
   createdAt   DateTime    @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model OrderItem {
@@ -70,4 +158,7 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
   quantity  Int
   price     Float
+
+  @@index([orderId])
+  @@index([productId])
 }

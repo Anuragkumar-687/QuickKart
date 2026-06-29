@@ -69,8 +69,8 @@ export default function CheckoutPage() {
                 <div className="p-6">
                     <h2 className="text-xl font-semibold mb-4 text-black">Order Summary</h2>
                     <div className="space-y-4">
-                        {cartItems.map((item, index) => (
-                            <div key={item._id || item.id || index} className="flex text-black justify-between">
+                        {cartItems.map((item) => (
+                            <div key={item.id} className="flex text-black justify-between">
                                 <span>
                                     {item.product.name} x {item.quantity}
                                 </span>

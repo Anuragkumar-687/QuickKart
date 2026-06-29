@@ -5,6 +5,8 @@ import api from '../../../lib/api';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useWishlist } from '../../../context/WishlistContext';
+import { Heart } from 'lucide-react';
 
 export default function ProductDetailsPage() {
     const params = useParams();
@@ -31,6 +33,8 @@ export default function ProductDetailsPage() {
 
     const { data: session } = useSession();
     const router = useRouter();
+    const { toggleWishlist, isInWishlist } = useWishlist();
+    const inWishlist = isInWishlist(product?.id);
 
     const handleAddToCart = async () => {
         if (!session) {
@@ -40,13 +44,26 @@ export default function ProductDetailsPage() {
 
         try {
             await api.post('/cart', {
-                productId: product?._id,
+                productId: product?.id,
                 quantity: 1,
             });
             alert('Added to cart!');
             router.push('/cart');
         } catch (error) {
             alert('Failed to add to cart');
+        }
+    };
+
+    const handleToggleWishlist = async () => {
+        if (!session) {
+            router.push('/login');
+            return;
+        }
+
+        try {
+            await toggleWishlist(product.id);
+        } catch (error) {
+            alert('Failed to update wishlist');
         }
     };
 
@@ -92,13 +109,26 @@ export default function ProductDetailsPage() {
                         </span>
                     </div>
 
-                    <button
-                        onClick={handleAddToCart}
-                        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
-                        disabled={product.stock === 0}
-                    >
-                        {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
-                    </button>
+                    <div className="flex gap-4 mb-6">
+                        <button
+                            onClick={handleAddToCart}
+                            className="flex-grow bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400 font-semibold"
+                            disabled={product.stock === 0}
+                        >
+                            {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
+                        </button>
+                        <button
+                            onClick={handleToggleWishlist}
+                            className={`px-6 py-3 rounded-lg border transition flex items-center justify-center gap-2 font-semibold ${
+                                inWishlist 
+                                    ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100' 
+                                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                            }`}
+                        >
+                            <Heart className={`w-5 h-5 ${inWishlist ? 'fill-red-600 text-red-600' : 'text-gray-500'}`} />
+                            <span>{inWishlist ? 'Saved' : 'Save to Wishlist'}</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

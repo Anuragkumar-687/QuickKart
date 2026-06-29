@@ -65,6 +65,18 @@ export function CartProvider({ children }) {
         }
     };
 
+    const updateQuantity = async (itemId, quantity) => {
+        try {
+            console.log('Updating cart item quantity:', { itemId, quantity });
+            const response = await api.patch(`/cart/${itemId}`, { quantity });
+            await fetchCartCount(); // refresh count safely
+            return response.data;
+        } catch (error) {
+            console.error('Failed to update cart item quantity:', error?.response?.data || error.message);
+            throw error;
+        }
+    };
+
     useEffect(() => {
         fetchCartCount();
     }, [session]);
@@ -74,6 +86,7 @@ export function CartProvider({ children }) {
             cartCount,
             fetchCartCount,
             addToCart,
+            updateQuantity,
             updateCartCount
         }}>
             {children}

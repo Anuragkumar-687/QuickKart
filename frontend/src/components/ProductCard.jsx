@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
+import { Heart } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 
@@ -12,7 +14,9 @@ export default function ProductCard({ product }) {
     const { data: session } = useSession();
     const router = useRouter();
     const { addToCart } = useCart();
+    const { toggleWishlist, isInWishlist } = useWishlist();
     const cardRef = useRef(null);
+    const inWishlist = isInWishlist(product.id);
 
     useEffect(() => {
         const card = cardRef.current;
@@ -64,12 +68,28 @@ export default function ProductCard({ product }) {
 
         try {
             console.log('Attempting to add product:', product);
-            await addToCart(product.id || product._id, 1);
+            await addToCart(product.id, 1);
             alert('Added to cart!');
         } catch (error) {
             console.error('Add to cart error:', error);
             const errorMessage = error.response?.data?.message || error.message || 'Failed to add to cart';
             alert(`Failed to add to cart: ${errorMessage}`);
+        }
+    };
+
+    const handleToggleWishlist = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!session) {
+            router.push('/login');
+            return;
+        }
+
+        try {
+            await toggleWishlist(product.id);
+        } catch (error) {
+            console.error('Toggle wishlist error:', error);
+            alert('Failed to update wishlist');
         }
     };
 
@@ -83,9 +103,17 @@ export default function ProductCard({ product }) {
                     className="product-image object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                 />
+                
+                <button
+                    onClick={handleToggleWishlist}
+                    className="absolute top-4 right-4 z-10 bg-white/80 hover:bg-white backdrop-blur-sm text-gray-700 hover:text-red-500 p-2.5 rounded-full shadow-md hover:shadow-lg transition-all active:scale-90"
+                    title={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                >
+                    <Heart className={`w-5 h-5 transition-colors ${inWishlist ? 'fill-red-500 text-red-500' : 'text-gray-700'}`} />
+                </button>
             </div>
             <div className="p-5">
-                <Link href={`/products/${product._id}`}>
+                <Link href={`/products/${product.id}`}>
                     <h3 className="text-base font-semibold mb-2 text-gray-900 hover:text-gray-600 transition-colors line-clamp-2 min-h-[3rem]">
                         {product.name}
                     </h3>

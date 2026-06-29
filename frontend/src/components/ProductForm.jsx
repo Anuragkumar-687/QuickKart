@@ -37,8 +37,8 @@ export default function ProductForm({ initialData, isEdit = false }) {
         setError('');
 
         try {
-            if (isEdit && initialData?._id) {
-                await api.put(`/products/${initialData._id}`, formData);
+            if (isEdit && initialData?.id) {
+                await api.put(`/products/${initialData.id}`, formData);
             } else {
                 await api.post('/products', formData);
             }

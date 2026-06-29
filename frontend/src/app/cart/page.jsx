@@ -16,7 +16,8 @@ export default function CartPage() {
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [removingId, setRemovingId] = useState(null);
-    const { fetchCartCount } = useCart();
+    const { fetchCartCount, updateQuantity } = useCart();
+    const [updatingId, setUpdatingId] = useState(null);
 
     useEffect(() => {
         if (status === 'unauthenticated') {
@@ -56,6 +57,29 @@ export default function CartPage() {
             alert('Failed to remove item');
         } finally {
             setRemovingId(null);
+        }
+    };
+
+    const handleUpdateQty = async (itemId, newQty) => {
+        if (newQty < 1) return;
+        setUpdatingId(itemId);
+        try {
+            const res = await updateQuantity(itemId, newQty);
+            // Since res is the updated cart model from backend:
+            if (res && Array.isArray(res.items)) {
+                setCartItems(res.items);
+            } else if (res && res.data && Array.isArray(res.data.items)) {
+                setCartItems(res.data.items);
+            } else {
+                // fall back to fetching cart
+                const fetchRes = await api.get('/cart');
+                setCartItems(fetchRes.data.items || []);
+            }
+        } catch (error) {
+            const errMsg = error.response?.data?.message || error.message || 'Failed to update quantity';
+            alert(`Could not update quantity: ${errMsg}`);
+        } finally {
+            setUpdatingId(null);
         }
     };
 
@@ -115,8 +139,31 @@ export default function CartPage() {
                                 </div>
                             </div>
                             <div className="flex items-center space-x-6 sm:space-x-8">
-                                <div className="bg-gray-50 px-4 py-2 rounded-lg">
-                                    <span className="text-gray-700 font-semibold">Qty: <span className="text-blue-600">{item.quantity}</span></span>
+                                <div className="flex flex-col items-end">
+                                    <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                                        <button
+                                            onClick={() => handleUpdateQty(item.id, item.quantity - 1)}
+                                            disabled={item.quantity <= 1 || updatingId === item.id}
+                                            className="px-3 py-1 text-lg font-bold hover:bg-gray-100 transition-colors text-gray-600 disabled:opacity-50"
+                                        >
+                                            -
+                                        </button>
+                                        <span className="px-4 py-1 text-gray-900 font-semibold min-w-[2rem] text-center bg-white border-x border-gray-200">
+                                            {item.quantity}
+                                        </span>
+                                        <button
+                                            onClick={() => handleUpdateQty(item.id, item.quantity + 1)}
+                                            disabled={item.quantity >= item.product.stock || updatingId === item.id}
+                                            className="px-3 py-1 text-lg font-bold hover:bg-gray-100 transition-colors text-gray-600 disabled:opacity-50"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                    {item.product.stock - item.quantity <= 3 && (
+                                        <span className="text-xs text-amber-600 font-semibold mt-1">
+                                            Only {item.product.stock} available
+                                        </span>
+                                    )}
                                 </div>
                                 <span className="font-bold text-2xl text-gray-900 min-w-[100px] text-right">
                                     ${(item.product.price * item.quantity).toFixed(2)}

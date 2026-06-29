@@ -19,7 +19,7 @@ export default function Home() {
         const fetchProducts = async () => {
             try {
                 const res = await api.get('/products');
-                setFeaturedProducts(res.data);
+                setFeaturedProducts(res.data.products || []);
             } catch (error) {
                 console.error('Failed to fetch products:', error);
             }
@@ -95,52 +95,6 @@ export default function Home() {
                             </div>
                         </div>
 
-                        {/* Color Filter */}
-                        <div className="relative">
-                            <select className="appearance-none bg-white border border-gray-300 rounded-full px-6 py-3 pr-10 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer transition-all">
-                                <option>All Colors</option>
-                                <option>Black</option>
-                                <option>White</option>
-                                <option>Gray</option>
-                                <option>Blue</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
-
-                        {/* Features Filter */}
-                        <div className="relative">
-                            <select className="appearance-none bg-white border border-gray-300 rounded-full px-6 py-3 pr-10 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer transition-all">
-                                <option>All Features</option>
-                                <option>Featured</option>
-                                <option>On Sale</option>
-                                <option>New Arrival</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
-
-                        {/* Price Filter */}
-                        <div className="relative">
-                            <select className="appearance-none bg-white border border-gray-300 rounded-full px-6 py-3 pr-10 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer transition-all">
-                                <option>All Prices</option>
-                                <option>Under $50</option>
-                                <option>$50 - $100</option>
-                                <option>$100 - $200</option>
-                                <option>Over $200</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
 
                         {/* Sort Filter */}
                         <div className="relative ml-auto">
@@ -172,8 +126,8 @@ export default function Home() {
                         </div>
                     ) : (
                         <div ref={productsRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {featuredProducts.map((product, index) => (
-                                <ProductCard key={product._id || product.id || index} product={product} />
+                            {featuredProducts.map((product) => (
+                                <ProductCard key={product.id} product={product} />
                             ))}
                         </div>
                     )}

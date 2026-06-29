@@ -24,7 +24,7 @@ export default function AdminDashboard() {
         const fetchProducts = async () => {
             try {
                 const res = await api.get('/products');
-                setProducts(res.data);
+                setProducts(res.data.products || []);
             } catch (error) {
                 console.error('Failed to fetch products');
             } finally {
@@ -42,7 +42,7 @@ export default function AdminDashboard() {
 
         try {
             await api.delete(`/products/${id}`);
-            setProducts(products.filter((p) => p._id !== id));
+            setProducts(products.filter((p) => p.id !== id));
         } catch (error) {
             alert('Failed to delete product');
         }
@@ -88,7 +88,7 @@ export default function AdminDashboard() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {products.map((product, index) => (
-                            <tr key={product._id || product.id || index}>
+                            <tr key={product.id}>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm font-medium text-gray-900">
                                         {product.name}
@@ -104,13 +104,13 @@ export default function AdminDashboard() {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <Link
-                                        href={`/admin/products/${product._id}/edit`}
+                                        href={`/admin/products/${product.id}/edit`}
                                         className="text-indigo-600 hover:text-indigo-900 mr-4"
                                     >
                                         Edit
                                     </Link>
                                     <button
-                                        onClick={() => product._id && handleDelete(product._id)}
+                                        onClick={() => handleDelete(product.id)}
                                         className="text-red-600 hover:text-red-900"
                                     >
                                         Delete
