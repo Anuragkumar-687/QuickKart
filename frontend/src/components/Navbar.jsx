@@ -10,7 +10,7 @@ import { useState } from 'react';
 export default function Navbar() {
     const { data: session } = useSession();
     const { cartCount } = useCart();
-    const { wishlistCount } = useWishlist();
+    const { count: wishlistCount } = useWishlist();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     return (
@@ -36,18 +36,6 @@ export default function Navbar() {
                             </Link>
                         )}
 
-                        <Link href="/wishlist" className="text-gray-600 hover:text-red-600 font-medium transition-colors flex items-center gap-2 group">
-                            <div className="relative">
-                                <Heart className="w-5 h-5 group-hover:text-red-600 transition-colors" />
-                                {wishlistCount > 0 && (
-                                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
-                                        {wishlistCount}
-                                    </span>
-                                )}
-                            </div>
-                            <span>Wishlist</span>
-                        </Link>
-
                         <Link href="/cart" className="text-gray-600 hover:text-blue-600 font-medium transition-colors flex items-center gap-2 group">
                             <div className="relative">
                                 <ShoppingCart className="w-5 h-5" />
@@ -62,6 +50,17 @@ export default function Navbar() {
 
                         {session ? (
                             <div className="flex items-center space-x-6 pl-6 border-l border-gray-200">
+                                <Link href="/wishlist" className="text-gray-600 hover:text-red-600 font-medium transition-colors flex items-center gap-2">
+                                    <div className="relative">
+                                        <Heart className="w-5 h-5" />
+                                        {wishlistCount > 0 && (
+                                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                                                {wishlistCount}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span>Wishlist</span>
+                                </Link>
                                 <Link href="/orders" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
                                     Orders
                                 </Link>
@@ -118,21 +117,15 @@ export default function Navbar() {
                                     Admin Dashboard
                                 </Link>
                             )}
-                            <Link href="/wishlist" className="text-gray-600 hover:text-red-600 font-medium px-2 flex items-center gap-2">
-                                <Heart className="w-5 h-5" />
-                                <span>Wishlist</span>
-                                {wishlistCount > 0 && (
-                                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                                        {wishlistCount}
-                                    </span>
-                                )}
-                            </Link>
                             <Link href="/cart" className="text-gray-600 hover:text-blue-600 font-medium px-2">
                                 Cart
                             </Link>
 
                             {session ? (
                                 <div className="pt-4 border-t border-gray-100 space-y-4">
+                                    <Link href="/wishlist" className="text-gray-600 hover:text-red-600 font-medium px-2 block">
+                                        Wishlist{wishlistCount > 0 ? ` (${wishlistCount})` : ''}
+                                    </Link>
                                     <Link href="/orders" className="text-gray-600 hover:text-blue-600 font-medium px-2 block">
                                         My Orders
                                     </Link>

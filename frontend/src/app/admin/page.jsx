@@ -23,8 +23,8 @@ export default function AdminDashboard() {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const res = await api.get('/products');
-                setProducts(res.data.products || []);
+                const res = await api.get('/products?limit=100&sort=newest');
+                setProducts(res.data.data || []);
             } catch (error) {
                 console.error('Failed to fetch products');
             } finally {
@@ -88,7 +88,7 @@ export default function AdminDashboard() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {products.map((product, index) => (
-                            <tr key={product.id}>
+                            <tr key={product.id || index}>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm font-medium text-gray-900">
                                         {product.name}
@@ -110,7 +110,7 @@ export default function AdminDashboard() {
                                         Edit
                                     </Link>
                                     <button
-                                        onClick={() => handleDelete(product.id)}
+                                        onClick={() => product.id && handleDelete(product.id)}
                                         className="text-red-600 hover:text-red-900"
                                     >
                                         Delete

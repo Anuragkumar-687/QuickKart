@@ -2,135 +2,115 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import { TrendingUp, MapPin, Sparkles, Clock, ArrowRight } from 'lucide-react';
 import api from '../lib/api';
-import ProductCard from '../components/ProductCard';
-import gsap from 'gsap';
+import RecommendationSection from '../components/RecommendationSection';
 
 export default function Home() {
-    const { data: session } = useSession();
-    const [featuredProducts, setFeaturedProducts] = useState([]);
-    const [category, setCategory] = useState('All Categories');
-    const [sortBy, setSortBy] = useState('Price: Low to High');
-    const heroRef = useRef(null);
-    const productsRef = useRef(null);
+    const { data: session, status } = useSession();
+    const region = session?.user?.region;
 
+    const [trending, setTrending] = useState({ data: [], loading: true });
+    const [regional, setRegional] = useState({ data: [], loading: true });
+    const [personalized, setPersonalized] = useState({ data: [], loading: false });
+    const [recent, setRecent] = useState({ data: [], loading: false });
+
+    // Public sections (work anonymously; backend infers region from the token when logged in)
     useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const res = await api.get('/products');
-                setFeaturedProducts(res.data.products || []);
-            } catch (error) {
-                console.error('Failed to fetch products:', error);
-            }
-        };
-
-        fetchProducts();
+        api.get('/recommendations/trending?limit=4')
+            .then((r) => setTrending({ data: r.data, loading: false }))
+            .catch(() => setTrending({ data: [], loading: false }));
+        api.get('/recommendations/region?limit=4')
+            .then((r) => setRegional({ data: r.data, loading: false }))
+            .catch(() => setRegional({ data: [], loading: false }));
     }, []);
 
-    // GSAP Animations
+    // Personalized sections (require auth)
     useEffect(() => {
-        let ctx = gsap.context(() => {
-            // Animate hero section
-            gsap.from(heroRef.current, {
-                opacity: 0,
-                y: 30,
-                duration: 0.8,
-                ease: 'power3.out'
-            });
-
-            // Animate product cards when they load
-            if (featuredProducts.length > 0 && productsRef.current) {
-                const cards = productsRef.current.querySelectorAll('.product-card');
-                gsap.from(cards, {
-                    opacity: 0,
-                    y: 50,
-                    duration: 0.6,
-                    stagger: 0.1,
-                    ease: 'power2.out',
-                    delay: 0.3,
-                    clearProps: 'all' // Ensure props are cleared after animation to prevent conflicts
-                });
-            }
-        });
-
-        return () => ctx.revert(); // Cleanup
-    }, [featuredProducts]);
+        if (status !== 'authenticated') {
+            setPersonalized({ data: [], loading: false });
+            setRecent({ data: [], loading: false });
+            return;
+        }
+        setPersonalized({ data: [], loading: true });
+        setRecent({ data: [], loading: true });
+        api.get('/recommendations/personalized?limit=4')
+            .then((r) => setPersonalized({ data: r.data, loading: false }))
+            .catch(() => setPersonalized({ data: [], loading: false }));
+        api.get('/recommendations/recently-viewed?limit=4')
+            .then((r) => setRecent({ data: r.data, loading: false }))
+            .catch(() => setRecent({ data: [], loading: false }));
+    }, [status]);
 
     return (
         <div className="min-h-screen bg-white">
-            {/* Hero Section */}
-            <section ref={heroRef} className="bg-white border-b border-gray-200 py-16 px-4">
+            {/* Hero */}
+            <section className="bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 text-white py-20 px-4">
                 <div className="container mx-auto max-w-6xl">
-                    <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4 tracking-tight">
-                        Get Inspired
+                    <h1 className="text-5xl md:text-6xl font-bold mb-4 tracking-tight">
+                        Shop smarter with QuickKart
                     </h1>
-                    <p className="text-lg text-gray-600 max-w-3xl leading-relaxed">
-                        Browsing for your next long-haul trip, everyday journey, or just fancy a look at what's new? From community favourites to about-to-sell-out items, see them all here.
+                    <p className="text-lg text-gray-300 max-w-2xl leading-relaxed mb-8">
+                        A region-aware commerce platform — trending products near you, personalized
+                        recommendations, and thousands of items across every category.
                     </p>
+                    <Link
+                        href="/products"
+                        className="inline-flex items-center gap-2 bg-white text-gray-900 px-7 py-3 rounded-full font-semibold hover:bg-gray-100 transition-all"
+                    >
+                        Browse all products <ArrowRight className="w-4 h-4" />
+                    </Link>
                 </div>
             </section>
 
-            {/* Filters Section */}
-            <section className="bg-white border-b border-gray-200 py-6 px-4 sticky top-16 z-40">
-                <div className="container mx-auto max-w-6xl">
-                    <div className="flex flex-wrap gap-4">
-                        {/* Category Filter */}
-                        <div className="relative">
-                            <select
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                                className="appearance-none bg-white border border-gray-300 rounded-full px-6 py-3 pr-10 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer transition-all"
-                            >
-                                <option>All Categories</option>
-                                <option>Electronics</option>
-                                <option>Clothing</option>
-                                <option>Home & Garden</option>
-                                <option>Sports</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
+            {/* Recommendation rails */}
+            <RecommendationSection
+                title="Trending Near You"
+                subtitle={region ? `Hot in ${region} India right now` : 'What shoppers are loving right now'}
+                products={trending.data}
+                loading={trending.loading}
+                icon={<TrendingUp className="w-6 h-6 text-indigo-600" />}
+            />
 
+            <RecommendationSection
+                title="Popular In Your Region"
+                subtitle={region ? `Most bought across ${region} India` : 'Most bought across the country'}
+                products={regional.data}
+                loading={regional.loading}
+                icon={<MapPin className="w-6 h-6 text-emerald-600" />}
+            />
 
-                        {/* Sort Filter */}
-                        <div className="relative ml-auto">
-                            <select
-                                value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value)}
-                                className="appearance-none bg-white border border-gray-300 rounded-full px-6 py-3 pr-10 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer transition-all"
-                            >
-                                <option>Price: Low to High</option>
-                                <option>Price: High to Low</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            {status === 'authenticated' && (
+                <>
+                    <RecommendationSection
+                        title="Recommended For You"
+                        subtitle="Picked from your interests, region & ratings"
+                        products={personalized.data}
+                        loading={personalized.loading}
+                        icon={<Sparkles className="w-6 h-6 text-amber-500" />}
+                    />
+                    <RecommendationSection
+                        title="Recently Viewed"
+                        subtitle="Pick up where you left off"
+                        products={recent.data}
+                        loading={recent.loading}
+                        icon={<Clock className="w-6 h-6 text-gray-500" />}
+                    />
+                </>
+            )}
 
-            {/* Products Grid */}
-            <section className="py-12 px-4">
-                <div className="container mx-auto max-w-6xl">
-                    {featuredProducts.length === 0 ? (
-                        <div className="text-center py-20">
-                            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-gray-900 mx-auto mb-4"></div>
-                            <p className="text-gray-600 text-lg">Loading products...</p>
-                        </div>
-                    ) : (
-                        <div ref={productsRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {featuredProducts.map((product) => (
-                                <ProductCard key={product.id} product={product} />
-                            ))}
-                        </div>
-                    )}
+            {/* CTA */}
+            <section className="py-16 px-4">
+                <div className="container mx-auto max-w-6xl text-center bg-gray-50 rounded-3xl py-14 border border-gray-100">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-3">Discover the full catalogue</h2>
+                    <p className="text-gray-600 mb-6">Search, filter and sort through thousands of products.</p>
+                    <Link
+                        href="/products"
+                        className="inline-flex items-center gap-2 bg-gray-900 text-white px-7 py-3 rounded-full font-semibold hover:bg-gray-800 transition-all"
+                    >
+                        Shop now <ArrowRight className="w-4 h-4" />
+                    </Link>
                 </div>
             </section>
         </div>
