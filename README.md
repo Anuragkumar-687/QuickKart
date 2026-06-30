@@ -146,5 +146,5 @@ For detailed deployment instructions for both Vercel (Frontend) and Render/Herok
 ---
 
 <div align="center">
-  <p>Built by Anurag</p>
+  <p>Built by Anurag Kumar</p>
 </div>
