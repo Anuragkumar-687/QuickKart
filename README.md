@@ -221,4 +221,6 @@ curl "localhost:5000/api/recommendations/trending?region=West"
 - `cd frontend && npm run build` — should compile all routes with no errors.
 
 ---
-<div align="center"><p>Built with ❤️ — region-aware commerce, recommendations & analytics.</p></div>
+<div align="center">
+  <p>Built by Anurag Kumar — region-aware commerce, recommendations & analytics.</p>
+</div>
