@@ -43,6 +43,8 @@ export const authOptions = {
             if (user) {
                 token.id = user.id;
                 token.role = user.role;
+                token.region = user.region;
+                token.state = user.state;
                 token.accessToken = user.accessToken;
             }
             return token;
@@ -51,6 +53,8 @@ export const authOptions = {
             if (session.user) {
                 session.user.id = token.id;
                 session.user.role = token.role;
+                session.user.region = token.region;
+                session.user.state = token.state;
                 session.accessToken = token.accessToken;
             }
             return session;

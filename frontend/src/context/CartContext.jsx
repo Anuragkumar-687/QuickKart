@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import api from '../lib/api';
 
@@ -10,85 +10,78 @@ export function CartProvider({ children }) {
     const { data: session } = useSession();
     const [cartCount, setCartCount] = useState(0);
 
-    const fetchCartCount = async () => {
+    const itemsOf = (data) =>
+        Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+
+    const syncFrom = (cart) => setCartCount(itemsOf(cart).length);
+
+    const fetchCartCount = useCallback(async () => {
         if (!session) {
             setCartCount(0);
             return;
         }
-
         try {
             const res = await api.get('/cart');
-            const data = res.data;
-
-            let items = [];
-
-            // Correct shape: { items: [...] }
-            if (data && Array.isArray(data.items)) {
-                items = data.items;
-            }
-            // Fallback: backend sends [...]
-            else if (Array.isArray(data)) {
-                items = data;
-            }
-            // Unexpected shape (403 / message / error)
-            else {
-                console.error("Unexpected cart response:", data);
-            }
-
-            setCartCount(items.length);
+            setCartCount(itemsOf(res.data).length);
         } catch (error) {
-            // 403 / Unauthorized / Network
             console.error('Failed to fetch cart count:', error?.response?.data || error.message);
-
-            // Never allow crash
             setCartCount(0);
         }
-    };
+    }, [session]);
 
-    const updateCartCount = (count) => {
-        setCartCount(typeof count === 'number' ? count : 0);
-    };
+    const getCart = useCallback(async () => {
+        const res = await api.get('/cart');
+        syncFrom(res.data);
+        return res.data;
+    }, []);
 
-    const addToCart = async (productId, quantity = 1) => {
-        try {
-            console.log('Adding to cart:', { productId, quantity });
+    const addToCart = useCallback(async (productId, quantity = 1) => {
+        const res = await api.post('/cart', { productId, quantity });
+        syncFrom(res.data);
+        return res.data;
+    }, []);
 
-            const response = await api.post('/cart', { productId, quantity });
+    const updateQuantity = useCallback(async (itemId, quantity) => {
+        const res = await api.patch(`/cart/${itemId}`, { quantity });
+        syncFrom(res.data);
+        return res.data;
+    }, []);
 
-            console.log('Add to cart response:', response.data);
+    const removeItem = useCallback(async (itemId) => {
+        const res = await api.delete(`/cart/${itemId}`);
+        syncFrom(res.data);
+        return res.data;
+    }, []);
 
-            await fetchCartCount(); // refresh count safely
-            return true;
-        } catch (error) {
-            console.error('Failed to add to cart:', error?.response?.data || error.message);
-            throw error;
-        }
-    };
+    const saveForLater = useCallback(async (itemId) => {
+        const res = await api.post(`/cart/${itemId}/save`);
+        syncFrom(res.data);
+        return res.data;
+    }, []);
 
-    const updateQuantity = async (itemId, quantity) => {
-        try {
-            console.log('Updating cart item quantity:', { itemId, quantity });
-            const response = await api.patch(`/cart/${itemId}`, { quantity });
-            await fetchCartCount(); // refresh count safely
-            return response.data;
-        } catch (error) {
-            console.error('Failed to update cart item quantity:', error?.response?.data || error.message);
-            throw error;
-        }
-    };
+    const moveToCart = useCallback(async (itemId) => {
+        const res = await api.post(`/cart/${itemId}/move`);
+        syncFrom(res.data);
+        return res.data;
+    }, []);
 
     useEffect(() => {
         fetchCartCount();
-    }, [session]);
+    }, [fetchCartCount]);
 
     return (
-        <CartContext.Provider value={{
-            cartCount,
-            fetchCartCount,
-            addToCart,
-            updateQuantity,
-            updateCartCount
-        }}>
+        <CartContext.Provider
+            value={{
+                cartCount,
+                fetchCartCount,
+                getCart,
+                addToCart,
+                updateQuantity,
+                removeItem,
+                saveForLater,
+                moveToCart,
+            }}
+        >
             {children}
         </CartContext.Provider>
     );
@@ -97,7 +90,7 @@ export function CartProvider({ children }) {
 export function useCart() {
     const context = useContext(CartContext);
     if (!context) {
-        throw new Error("useCart must be used inside CartProvider");
+        throw new Error('useCart must be used inside CartProvider');
     }
     return context;
 }

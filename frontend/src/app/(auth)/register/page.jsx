@@ -4,12 +4,23 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import api from '../../../lib/api';
-import { Mail, Lock, User, ShoppingCart, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, ShoppingCart, ArrowRight, MapPin } from 'lucide-react';
+
+const STATES = [
+    'Delhi', 'Haryana', 'Punjab', 'Himachal Pradesh', 'Uttarakhand', 'Uttar Pradesh', 'Jammu and Kashmir', 'Ladakh', 'Chandigarh', 'Rajasthan',
+    'Andhra Pradesh', 'Karnataka', 'Kerala', 'Tamil Nadu', 'Telangana', 'Puducherry',
+    'Bihar', 'Jharkhand', 'Odisha', 'West Bengal', 'Chhattisgarh',
+    'Goa', 'Gujarat', 'Maharashtra', 'Madhya Pradesh',
+    'Assam', 'Arunachal Pradesh', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Tripura', 'Sikkim',
+];
 
 export default function RegisterPage() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [state, setState] = useState('');
+    const [city, setCity] = useState('');
+    const [pincode, setPincode] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -24,6 +35,9 @@ export default function RegisterPage() {
                 name,
                 email,
                 password,
+                ...(state ? { state } : {}),
+                ...(city ? { city } : {}),
+                ...(pincode ? { pincode } : {}),
             });
 
             router.push('/login');
@@ -130,6 +144,49 @@ export default function RegisterPage() {
                                     minLength={6}
                                 />
                             </div>
+                        </div>
+
+                        {/* Region / Address (optional — powers region-based recommendations) */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">State</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <MapPin className="h-5 w-5 text-gray-500" />
+                                    </div>
+                                    <select
+                                        value={state}
+                                        onChange={(e) => setState(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-3.5 bg-gray-800/50 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400/50 transition-all text-white"
+                                    >
+                                        <option value="">Select state</option>
+                                        {STATES.map((s) => (
+                                            <option key={s} value={s}>{s}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">City</label>
+                                <input
+                                    type="text"
+                                    value={city}
+                                    onChange={(e) => setCity(e.target.value)}
+                                    placeholder="Mumbai"
+                                    className="w-full px-4 py-3.5 bg-gray-800/50 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400/50 transition-all text-white placeholder-gray-500"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">Pincode</label>
+                            <input
+                                type="text"
+                                value={pincode}
+                                onChange={(e) => setPincode(e.target.value)}
+                                placeholder="400001"
+                                className="w-full px-4 py-3.5 bg-gray-800/50 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400/50 transition-all text-white placeholder-gray-500"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Optional — used to personalize region-based recommendations.</p>
                         </div>
 
                         {/* Submit Button */}

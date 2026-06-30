@@ -1,17 +1,25 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "QuickKart commerce API — region-aware product, cart, reviews, wishlist, analytics & recommendations",
+  "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "seed": "node src/seed.js",
+    "ingest": "node src/scripts/ingest.js",
+    "make-admin": "node src/make-admin.js",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prisma:push": "prisma db push"
   },
-  "keywords": [],
+  "keywords": [
+    "ecommerce",
+    "express",
+    "prisma",
+    "mongodb",
+    "recommendations"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
@@ -21,18 +29,14 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-rate-limit": "^7.4.1",
+    "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
+    "node-cron": "^3.0.3",
     "prisma": "^5.22.0",
-    "zod": "^4.4.3"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.5",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^24.10.1",
-    "nodemon": "^3.1.11",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "nodemon": "^3.1.11"
   }
 }

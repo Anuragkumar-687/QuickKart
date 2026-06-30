@@ -6,56 +6,41 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useEffect, useRef, useState } from 'react';
 import { Heart } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import RatingStars from './RatingStars';
 import gsap from 'gsap';
 
 export default function ProductCard({ product }) {
     const { data: session } = useSession();
     const router = useRouter();
     const { addToCart } = useCart();
-    const { toggleWishlist, isInWishlist } = useWishlist();
+    const { isWishlisted, toggle } = useWishlist();
     const cardRef = useRef(null);
-    const inWishlist = isInWishlist(product.id);
+    const [adding, setAdding] = useState(false);
+
+    // Prisma maps Mongo _id -> id, so `id` is canonical. Keep _id as a fallback.
+    const productId = product.id || product._id;
+    const wished = isWishlisted(productId);
+    const outOfStock = product.stock != null && product.stock <= 0;
 
     useEffect(() => {
         const card = cardRef.current;
-
-        // Hover animation
-        const handleMouseEnter = () => {
-            gsap.to(card.querySelector('.product-image'), {
-                scale: 1.05,
-                duration: 0.4,
-                ease: 'power2.out'
-            });
-            gsap.to(card, {
-                y: -8,
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                duration: 0.3,
-                ease: 'power2.out'
-            });
+        if (!card) return;
+        const img = card.querySelector('.product-image');
+        const onEnter = () => {
+            gsap.to(img, { scale: 1.05, duration: 0.4, ease: 'power2.out' });
+            gsap.to(card, { y: -8, duration: 0.3, ease: 'power2.out' });
         };
-
-        const handleMouseLeave = () => {
-            gsap.to(card.querySelector('.product-image'), {
-                scale: 1,
-                duration: 0.4,
-                ease: 'power2.out'
-            });
-            gsap.to(card, {
-                y: 0,
-                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-                duration: 0.3,
-                ease: 'power2.out'
-            });
+        const onLeave = () => {
+            gsap.to(img, { scale: 1, duration: 0.4, ease: 'power2.out' });
+            gsap.to(card, { y: 0, duration: 0.3, ease: 'power2.out' });
         };
-
-        card.addEventListener('mouseenter', handleMouseEnter);
-        card.addEventListener('mouseleave', handleMouseLeave);
-
+        card.addEventListener('mouseenter', onEnter);
+        card.addEventListener('mouseleave', onLeave);
         return () => {
-            card.removeEventListener('mouseenter', handleMouseEnter);
-            card.removeEventListener('mouseleave', handleMouseLeave);
+            card.removeEventListener('mouseenter', onEnter);
+            card.removeEventListener('mouseleave', onLeave);
         };
     }, []);
 
@@ -65,67 +50,74 @@ export default function ProductCard({ product }) {
             router.push('/login');
             return;
         }
-
+        setAdding(true);
         try {
-            console.log('Attempting to add product:', product);
-            await addToCart(product.id, 1);
-            alert('Added to cart!');
-        } catch (error) {
-            console.error('Add to cart error:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to add to cart';
-            alert(`Failed to add to cart: ${errorMessage}`);
+            await addToCart(productId, 1);
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to add to cart');
+        } finally {
+            setAdding(false);
         }
     };
 
-    const handleToggleWishlist = async (e) => {
+    const handleWishlist = async (e) => {
         e.preventDefault();
-        e.stopPropagation();
         if (!session) {
             router.push('/login');
             return;
         }
-
         try {
-            await toggleWishlist(product.id);
-        } catch (error) {
-            console.error('Toggle wishlist error:', error);
-            alert('Failed to update wishlist');
+            await toggle(productId);
+        } catch (_) {
+            /* ignore */
         }
     };
 
     return (
-        <div ref={cardRef} className="product-card group bg-white rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100">
+        <div ref={cardRef} className="product-card group bg-white rounded-lg overflow-hidden border border-gray-100 shadow-sm">
             <div className="relative h-72 w-full overflow-hidden bg-gray-50">
-                <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="product-image object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                />
-                
+                <Link href={`/products/${productId}`}>
+                    <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        className="product-image object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                    />
+                </Link>
                 <button
-                    onClick={handleToggleWishlist}
-                    className="absolute top-4 right-4 z-10 bg-white/80 hover:bg-white backdrop-blur-sm text-gray-700 hover:text-red-500 p-2.5 rounded-full shadow-md hover:shadow-lg transition-all active:scale-90"
-                    title={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                    onClick={handleWishlist}
+                    aria-label="Toggle wishlist"
+                    className="absolute top-3 right-3 p-2 rounded-full bg-white/90 backdrop-blur shadow hover:scale-110 transition-transform"
                 >
-                    <Heart className={`w-5 h-5 transition-colors ${inWishlist ? 'fill-red-500 text-red-500' : 'text-gray-700'}`} />
+                    <Heart className={`w-5 h-5 ${wished ? 'text-red-500 fill-red-500' : 'text-gray-500'}`} />
                 </button>
+                {outOfStock && (
+                    <span className="absolute top-3 left-3 bg-gray-900 text-white text-xs px-2 py-1 rounded-full">
+                        Out of stock
+                    </span>
+                )}
             </div>
             <div className="p-5">
-                <Link href={`/products/${product.id}`}>
-                    <h3 className="text-base font-semibold mb-2 text-gray-900 hover:text-gray-600 transition-colors line-clamp-2 min-h-[3rem]">
+                <Link href={`/products/${productId}`}>
+                    <h3 className="text-base font-semibold mb-1 text-gray-900 hover:text-gray-600 transition-colors line-clamp-2 min-h-[3rem]">
                         {product.name}
                     </h3>
                 </Link>
-                <p className="text-sm text-gray-500 mb-3 line-clamp-1">{product.category}</p>
+                <p className="text-sm text-gray-500 mb-2 line-clamp-1">{product.category}</p>
+                {product.rating != null && (
+                    <div className="mb-3">
+                        <RatingStars rating={product.rating} count={product.ratingCount} />
+                    </div>
+                )}
                 <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-gray-900">${product.price.toFixed(2)}</span>
+                    <span className="text-lg font-bold text-gray-900">${Number(product.price).toFixed(2)}</span>
                     <button
                         onClick={handleAddToCart}
-                        className="bg-gray-900 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-gray-800 transition-all active:scale-95 transform shadow-sm hover:shadow-md"
+                        disabled={adding || outOfStock}
+                        className="bg-gray-900 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-gray-800 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Add to Cart
+                        {adding ? 'Adding…' : outOfStock ? 'Sold out' : 'Add to Cart'}
                     </button>
                 </div>
             </div>
