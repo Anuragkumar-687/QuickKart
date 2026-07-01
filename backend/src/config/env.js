@@ -23,7 +23,7 @@ const env = {
 
   CLIENT_ORIGINS: (
     process.env.CLIENT_ORIGINS ||
-    'http://localhost:3000,https://ecommercee-webiste.vercel.app'
+    'http://localhost:3000,https://quick-kart-black.vercel.app,*.vercel.app'
   )
     .split(',')
     .map((s) => s.trim())
