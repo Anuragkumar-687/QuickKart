@@ -1,226 +1,412 @@
 <div align="center">
-  <h1>🛒 QuickKart</h1>
-  <p>A region-aware, production-style commerce platform — API-driven catalog, analytics pipeline, and a rule-based recommendation engine.</p>
 
-  <p>
-    <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
-    <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
-    <img src="https://img.shields.io/badge/Express.js-404D59?style=for-the-badge" alt="Express.js" />
-    <img src="https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white" alt="Prisma" />
-    <img src="https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
-    <img src="https://img.shields.io/badge/Zod-3E67B1?style=for-the-badge&logo=zod&logoColor=white" alt="Zod" />
-    <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis" />
-  </p>
+# 🛒 QuickKart
+
+**A region-aware commerce platform** — API-driven catalog ingestion, a behavioural analytics pipeline, and a rule-based recommendation engine, wrapped in a premium, motion-rich UI.
+
+[![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Framer Motion](https://img.shields.io/badge/Framer_Motion-0055FF?style=for-the-badge&logo=framer&logoColor=white)](https://www.framer.com/motion/)
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express_5-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![MongoDB](https://img.shields.io/badge/MongoDB_Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
+[![Zod](https://img.shields.io/badge/Zod-3E67B1?style=for-the-badge&logo=zod&logoColor=white)](https://zod.dev/)
+[![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
+
+**[🌐 Live Demo](https://quick-kart-black.vercel.app)** · **[⚙️ Live API](https://quickkart-4.onrender.com/api/health)** · **[💻 Repository](https://github.com/Anuragkumar-687/QuickKart)**
+
 </div>
 
-<br />
+---
 
-## 📋 Table of Contents
-- [Overview](#-overview)
-- [Architecture](#-architecture)
-- [Tech Stack](#-tech-stack)
-- [Features](#-features)
-- [Project Structure](#-project-structure)
-- [Getting Started](#-getting-started)
-- [API Reference](#-api-reference)
-- [How the Intelligence Works](#-how-the-intelligence-works)
-- [Background Jobs & Caching](#-background-jobs--caching)
-- [Roadmap (Phase 3)](#-roadmap-phase-3)
-- [Verification Checklist](#-verification-checklist)
+## Overview
 
-## 🚀 Overview
+QuickKart is a full-stack e-commerce application built as a **decoupled platform**: a Next.js 16 App Router frontend on Vercel talking to a standalone Express 5 REST API on Render, backed by MongoDB Atlas via Prisma.
 
-QuickKart started as a simple CRUD shop and has been refactored into a **production-style, region-aware commerce platform**:
+Instead of a hardcoded product list, the catalog is **ingested from external APIs** (DummyJSON + FakeStore), normalized into a single schema, and deduplicated into MongoDB. Every meaningful interaction — views, clicks, add-to-carts, purchases — is captured into an **analytics pipeline** that feeds a **per-region trending engine** and a **weighted recommendation engine**, powering personalized homepage rails ("Trending Near You", "Popular In Your Region", "Recommended For You", "Recently Viewed").
 
-- The catalog is **ingested from external APIs** (DummyJSON + FakeStore), normalized into a common schema, deduplicated, and stored in MongoDB.
-- Product APIs are fully **server-side**: pagination, search, category filtering and sorting.
-- A lightweight **analytics pipeline** records views, clicks, cart-adds and purchases, tagged by region.
-- A **regional trending engine** and a **rule-based recommendation engine** power personalized homepage rails ("Trending Near You", "Popular In Your Region", "Recommended For You", "Recently Viewed").
-- Security is hardened with **JWT auth, RBAC, Zod validation, centralized error handling and rate limiting**.
+The backend is a clean, layered architecture (`routes → controllers → services → Prisma`) with JWT auth, RBAC, Zod validation, centralized error handling, and rate limiting. The frontend is a dark-first, animated experience (GSAP + Framer Motion + Lenis) with a full accessibility pass (`prefers-reduced-motion`, focus states, ARIA).
 
-The entire codebase is **JavaScript** (the backend was migrated off TypeScript to plain Node/Express + CommonJS).
+## 🔗 Demo
+
+| | Link |
+|---|---|
+| **Live Demo** (frontend) | https://quick-kart-black.vercel.app |
+| **Backend API** (health) | https://quickkart-4.onrender.com/api/health |
+| **Repository** | https://github.com/Anuragkumar-687/QuickKart |
+
+> **Demo login:** `admin@quickkart.com` / `password123` (admin) · `user@quickkart.com` / `password123` (user)
+> The API is on Render's free tier and may cold-start (~30–50s) on first request.
+
+---
+
+## ✨ Features
+
+<table>
+<tr><td valign="top" width="50%">
+
+**🔐 Authentication & Access**
+- Email/password auth via NextAuth (Credentials) + backend JWT
+- Role-based access control (user / admin)
+- Protected routes & admin-only APIs
+- Profile with region/address (`GET`/`PATCH /me`)
+
+**📦 Products & Catalog**
+- API-driven ingestion (DummyJSON + FakeStore) → normalized schema, deduped by `externalId`
+- Admin CRUD (create / edit / delete)
+- Ratings & one-review-per-user reviews
+- Scheduled catalog refresh endpoint
+
+**🔎 Search & Filters**
+- Server-side search across name/description/brand/category
+- Search suggestions endpoint
+- Category filter, price sort, rating sort, newest — all server-side
+- Debounced input, URL-driven filters, pagination
+
+**🛒 Cart & Orders**
+- Increase/decrease quantity, remove, **Save For Later**
+- Stock validation on every mutation
+- Transactional checkout (stock decrement + order + purchase events)
+- Multi-step checkout UI with animated success screen
+
+</td><td valign="top" width="50%">
+
+**🎯 Recommendations & Intelligence**
+- Per-region **trending engine** (`views·0.2 + cartAdds·0.3 + purchases·0.5`)
+- Weighted **recommendation engine** (`0.4 region + 0.3 interest + 0.2 rating + 0.1 trend`)
+- Frequently Bought Together (order co-occurrence)
+- Demand forecasting + inventory intelligence (low-stock / reorder)
+
+**📍 Region-Aware**
+- User `state → region` auto-derivation (North/South/East/West/Northeast)
+- Region-tagged analytics events & rankings
+- Admin analytics dashboard with animated charts
+
+**💚 Wishlist**
+- Toggle from any product card / detail page
+- Dedicated wishlist page + navbar counter
+
+**🎨 UI / UX**
+- **Dark-first** theme + light toggle (persisted, no FOUC)
+- GSAP hero, Framer Motion transitions, Lenis smooth scroll
+- 3D tilt cards, magnetic buttons, skeletons, `prefers-reduced-motion`
+- Fully responsive, mobile-first
+
+**⚡ Performance & 🔒 Security**
+- Pagination, optional Redis caching, DB indexing
+- JWT, bcrypt, RBAC, Zod, CORS, rate limiting
+
+</td></tr>
+</table>
+
+---
+
+## 🧰 Tech Stack
+
+<table>
+<tr><th>Frontend</th><th>Backend</th></tr>
+<tr><td valign="top">
+
+| Tech | Purpose |
+|---|---|
+| Next.js 16 (App Router) | Framework / routing |
+| React 19 | UI library |
+| Tailwind CSS v4 | Styling (token system) |
+| Framer Motion 12 | Component / page motion |
+| GSAP 3 | Hero timeline animation |
+| Lenis | Smooth scrolling |
+| NextAuth v4 | Session / auth |
+| Axios | HTTP client (+ JWT interceptor) |
+| lucide-react | Icons |
+
+</td><td valign="top">
+
+| Tech | Purpose |
+|---|---|
+| Node.js (≥18.18) | Runtime |
+| Express 5 | REST API framework |
+| Prisma 5 | ORM |
+| Zod | Request validation |
+| jsonwebtoken | JWT signing/verify |
+| bcryptjs | Password hashing |
+| ioredis | Optional caching |
+| express-rate-limit | Rate limiting |
+| node-cron | Background jobs |
+
+</td></tr>
+</table>
+
+| Database | Authentication | Deployment | Developer Tools |
+|---|---|---|---|
+| MongoDB Atlas | NextAuth (Credentials) | **Vercel** (frontend) | nodemon |
+| Prisma ORM | JWT (bearer) | **Render** (backend API) | ESLint + eslint-config-next |
+| 12 models + indexes | bcrypt hashing | MongoDB Atlas (DB) | Prisma CLI |
+| Aggregation (`groupBy`) | RBAC middleware | Redis (optional, e.g. Upstash) | dotenv |
+
+---
 
 ## 🏗 Architecture
 
 ```
-Next.js (App Router, React 19, Tailwind)
-        │  axios + NextAuth (JWT)
-        ▼
-Express API  ──►  Middleware (auth · RBAC · Zod validate · rate-limit · errors)
-        │
-        ▼
-Service Layer  (products · ingestion · cart · orders · reviews · wishlist ·
-        │       analytics · trending · recommendations · search · inventory)
-        ▼
-Prisma ORM  ──►  MongoDB Atlas
-        │
-        ▼
-Redis (optional)  ──►  caching for trending / recommendations / hot queries
-node-cron        ──►  background jobs (catalog refresh · trending recompute)
+┌─────────────────────────────────────────────────────────────┐
+│  Next.js 16 (App Router)  ·  Vercel                          │
+│  pages + client components → Axios (JWT interceptor)         │
+│  state: React Context (Cart, Wishlist) + NextAuth session    │
+└───────────────────────────────┬─────────────────────────────┘
+                                 │  HTTPS  /api/*   (Bearer JWT)
+┌───────────────────────────────▼─────────────────────────────┐
+│  Express 5 REST API  ·  Render                               │
+│  CORS → rate-limit → routes → controllers → services         │
+│  middleware: auth · rbac · Zod validate · error handler      │
+└───────────────────────────────┬─────────────────────────────┘
+                    ┌────────────┴───────────┐
+              ┌─────▼─────┐            ┌──────▼──────┐
+              │ Prisma ORM│            │ Redis (opt) │
+              │ MongoDB   │            │ cache + TTL │
+              │ Atlas     │            └─────────────┘
+              └───────────┘   node-cron → ingestion / trending jobs
 ```
 
-> **Redis is optional.** With no `REDIS_URL` set the app runs exactly the same — the cache layer becomes a transparent pass-through (graceful degradation).
+- **Frontend** — App Router with static prerendering for most routes and dynamic rendering for param routes (`/products/[id]`, admin edit). Interactive pages are client components that fetch through a shared Axios instance ([`frontend/src/lib/api.js`](frontend/src/lib/api.js)).
+- **Backend** — a strictly **layered** design: thin controllers delegate to a reusable **service layer**; `asyncHandler` forwards errors to a central handler; every input passes through a **Zod** middleware.
+- **Database** — Prisma models Mongo `_id → id`; schema declares indexes on hot query paths; analytics use Mongo aggregation via `groupBy`.
+- **Authentication** — NextAuth wraps the backend's own JWT: the credentials provider calls `/api/auth/login`, stores the returned token as `session.accessToken`, and Axios attaches it as a `Bearer` header on every request. The backend verifies it and sets `req.user` for RBAC.
+- **API flow** — browser → Axios (`Authorization: Bearer`) → CORS → global rate limiter → route → validate → controller → service → Prisma → JSON.
+- **State management** — React **Context API** (`CartContext`, `WishlistContext`) + NextAuth `SessionProvider` + component-local state. No global store library.
 
-## 🛠 Tech Stack
+---
 
-| Layer        | Technology |
-|--------------|-----------|
-| Frontend     | Next.js 16 (App Router), React 19, Tailwind CSS v4, NextAuth, Axios, GSAP, lucide-react |
-| Backend      | Node.js, Express 5, **JavaScript (CommonJS)** |
-| Database     | MongoDB Atlas + Prisma ORM v5 |
-| Validation   | Zod |
-| Auth         | JWT + bcryptjs + NextAuth (credentials) |
-| Caching      | Redis (ioredis) — optional |
-| Jobs         | node-cron |
-| Analytics    | MongoDB Aggregation (Prisma `groupBy` + `$runCommandRaw`) |
+## 📁 Folder Structure
 
-## ✨ Features
+<details>
+<summary><b>Backend</b> — <code>routes → controllers → services → Prisma</code></summary>
 
-### Phase 1 — Production Commerce Foundation
-- **Product ingestion service** — pulls from DummyJSON + FakeStore, normalizes to `{ id, title→name, description, price, category, image, rating, stock, source }`, deduplicates by a unique `externalId`, and exposes a **scheduled refresh** endpoint.
-- **Server-side product APIs** — `?page`, `?limit`, `?search`, `?category`, `?sort` (`price_asc|price_desc|rating_desc|newest|name_asc`).
-- **Cart** — increase / decrease quantity, remove, **Save For Later**, and **stock validation** everywhere.
-- **Security** — RBAC middleware (admin-only routes), Zod request validation, centralized error handling, rate limiting.
-- **Reviews & ratings** (one per user/product, aggregate recompute) and **Wishlist** (toggle).
+```
+backend/
+├── prisma/schema.prisma          # 12 models + indexes
+├── render.yaml                   # Render blueprint
+└── src/
+    ├── server.js                 # app bootstrap: CORS, rate-limit, routes, error handler
+    ├── config/env.js             # centralized env access
+    ├── lib/                      # prisma · redis · cache · logger · regions · token · ApiError · httpClient
+    ├── middleware/               # auth · rbac · validate (Zod) · errorHandler · rateLimit
+    ├── validators/               # Zod schemas per domain
+    ├── services/                 # products · ingestion · cart · orders · reviews · wishlist ·
+    │                             #   analytics · trending · recommendations · search · inventory · forecast
+    ├── controllers/              # thin HTTP handlers (11)
+    ├── routes/                   # one router per module (11)
+    ├── jobs/scheduler.js         # node-cron jobs
+    ├── scripts/                  # ingest.js · migrate-legacy.js
+    ├── seed.js · make-admin.js
+```
+</details>
 
-### Phase 2 — Region-Aware Intelligence
-- **User regions** — `state / city / pincode`, with `region` (North/South/East/West/Northeast) auto-derived from state.
-- **Analytics tracking** — `ProductView`, `CartEvent`, `PurchaseEvent`, aggregated into `RegionAnalytics`.
-- **Regional trending engine** — `views*0.2 + cartAdds*0.3 + purchases*0.5`, ranked per region.
-- **Recommendation engine** — `0.4·regionalPopularity + 0.3·userInterest + 0.2·rating + 0.1·recentTrend`.
-- **Dashboard APIs** — top products by region/state, most-purchased categories, most-viewed products.
+<details>
+<summary><b>Frontend</b> — Next.js App Router</summary>
 
-### Phase 3 — Flipkart-style layer (included baseline)
-- **Frequently Bought Together** (OrderItem co-occurrence) · **Smart search** + suggestions · **Demand forecasting** (per region/category) · **Inventory intelligence** (low-stock / high-demand / reorder suggestions).
-
-## 📁 Project Structure
-
-```text
-backend/src/
-├── config/env.js            # centralized env access
-├── lib/                     # prisma, redis, cache, logger, regions, token, ApiError…
-├── middleware/              # auth, rbac, validate (Zod), errorHandler, rateLimit
-├── validators/              # Zod schemas per domain
-├── services/                # business logic (products, ingestion, cart, orders,
-│                            #   reviews, wishlist, analytics, trending,
-│                            #   recommendations, search, inventory, forecast)
-├── controllers/             # thin HTTP handlers
-├── routes/                  # one router per domain
-├── jobs/scheduler.js        # node-cron background jobs
-├── scripts/                 # ingest.js, migrate-legacy.js
-├── seed.js · make-admin.js
-└── server.js                # app bootstrap
-
+```
 frontend/src/
-├── app/                     # App Router pages (home, products, cart, wishlist, admin…)
-├── components/              # ProductCard, RatingStars, RecommendationSection, Navbar…
-├── context/                 # CartContext, WishlistContext
-└── lib/api.js               # axios instance w/ auth interceptor
+├── app/
+│   ├── layout.jsx · template.jsx · globals.css
+│   ├── page.jsx                  # animated homepage (rails, hero, sections)
+│   ├── (auth)/login · register
+│   ├── products/ · products/[id]/
+│   ├── cart/ · checkout/ · orders/ · wishlist/
+│   ├── admin/ · admin/analytics/ · admin/products/new · [id]/edit
+│   └── api/auth/[...nextauth]/route.js
+├── components/
+│   ├── Navbar · Footer · ProductCard · RecommendationSection · AuthShell …
+│   ├── motion/                   # SmoothScroll · Reveal · Magnetic · TiltCard · AuroraBackground · AnimatedNumber
+│   └── charts/                   # BarList · ProgressRing
+├── context/                      # CartContext · WishlistContext
+└── lib/api.js                    # axios instance + JWT interceptor
 ```
+</details>
 
-## 🚀 Getting Started
+---
 
-### Prerequisites
-- Node.js **18+** (tested on Node 26 — backend uses the global `fetch`)
-- A MongoDB Atlas connection string
-- (Optional) Redis, for caching
+## 📡 API Overview
 
-### 1. Backend
+Base URL: `/api` · 🔓 public · 🔑 auth required · 👑 admin only
+
+<details open>
+<summary><b>Auth</b> · <code>/auth</code></summary>
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| POST | `/auth/signup` (+ `/register`) | 🔓 | Register; derives region from state |
+| POST | `/auth/login` | 🔓 | Returns `{ token, user }` |
+| GET / PATCH | `/auth/me` | 🔑 | Read / update profile |
+</details>
+
+<details>
+<summary><b>Products & Search</b> · <code>/products</code>, <code>/search</code></summary>
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/products` | 🔓 | `?page&limit&search&category&sort&source&minPrice&maxPrice` |
+| GET | `/products/categories` | 🔓 | Distinct categories |
+| GET | `/products/:id` | 🔓 | Product detail (records a view) |
+| POST | `/products` | 👑 | Create product |
+| PUT / DELETE | `/products/:id` | 👑 | Update / delete |
+| GET | `/products/:id/reviews` | 🔓 | List reviews |
+| POST | `/products/:id/reviews` | 🔑 | Create/update own review |
+| DELETE | `/reviews/:id` | 🔑 | Delete own review |
+| GET | `/search` · `/search/suggestions` | 🔓 | Full-text-ish search |
+</details>
+
+<details>
+<summary><b>Cart · Orders · Wishlist</b></summary>
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET / POST | `/cart` | 🔑 | Get cart / add item (stock-validated) |
+| PATCH / DELETE | `/cart/:id` | 🔑 | Set quantity (0 = remove) / remove |
+| POST | `/cart/:id/save` · `/cart/:id/move` | 🔑 | Save for later / move to cart |
+| GET / POST | `/orders` | 🔑 | List / place order (transactional) |
+| GET | `/wishlist` | 🔑 | List wishlist |
+| POST / DELETE | `/wishlist/:productId` | 🔑 | Toggle / remove |
+</details>
+
+<details>
+<summary><b>Recommendations · Analytics · Ingestion · Inventory</b></summary>
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/recommendations/trending` · `/region` | 🔓 | Region-aware rails |
+| GET | `/recommendations/personalized` · `/recently-viewed` | 🔑 | Personalized rails |
+| GET | `/recommendations/bundles/:productId` | 🔓 | Frequently bought together |
+| POST | `/analytics/track` | 🔓 | Record view/click/cart-add |
+| POST | `/analytics/recompute` | 👑 | Recompute trending rankings |
+| GET | `/analytics/regions` | 👑 | Dashboard aggregations |
+| POST | `/ingestion/sync` · GET `/ingestion/status` | 👑 | Refresh catalog |
+| GET | `/inventory/alerts` · `/inventory/forecast` | 👑 | Low-stock / demand forecast |
+| GET | `/api/health` | 🔓 | DB + Redis health |
+</details>
+
+---
+
+## 🚀 Installation
+
+**Prerequisites:** Node.js ≥ 18.18, a MongoDB Atlas connection string, (optional) Redis.
+
 ```bash
+git clone https://github.com/Anuragkumar-687/QuickKart.git
+cd QuickKart
+
+# 1) Backend
 cd backend
-cp .env.example .env          # fill in DATABASE_URL + JWT_SECRET
-npm install                   # also runs `prisma generate`
+cp .env.example .env          # fill DATABASE_URL + JWT_SECRET
+npm install                   # runs `prisma generate`
 npm run prisma:push           # apply schema + indexes to Atlas
 npm run seed                  # users + ingested catalog + demo analytics + trending
 npm run dev                   # http://localhost:5000
-```
 
-> If you upgraded an existing database that already had products, run `node src/scripts/migrate-legacy.js` once **before** `prisma:push` to backfill new required fields.
-
-### 2. Frontend
-```bash
-cd frontend
+# 2) Frontend (new terminal)
+cd ../frontend
 cp .env.local.example .env.local   # set NEXT_PUBLIC_API_URL + NEXTAUTH_SECRET
 npm install
 npm run dev                        # http://localhost:3000
 ```
 
-### Default credentials (after `npm run seed`)
-| Role  | Email                  | Password      | Region |
-|-------|------------------------|---------------|--------|
-| Admin | `admin@quickkart.com`  | `password123` | North  |
-| User  | `user@quickkart.com`   | `password123` | West   |
+---
 
-Promote any user with: `npm run make-admin -- their@email.com`.
+## 🔧 Environment Variables
 
-## 📡 API Reference
+**Backend** (`backend/.env`)
 
-Base path: `/api`
+| Variable | Required | Description |
+|---|:---:|---|
+| `DATABASE_URL` | ✅ | MongoDB Atlas connection string |
+| `JWT_SECRET` | ✅ | Secret for signing JWTs |
+| `JWT_EXPIRES_IN` | — | Token lifetime (default `7d`) |
+| `PORT` | — | Server port (default `5000`; set by host) |
+| `NODE_ENV` | — | `development` / `production` |
+| `CLIENT_ORIGINS` | prod | Comma-separated allowed CORS origins (supports `*.vercel.app`) |
+| `REDIS_URL` | — | Enables caching when set (graceful fallback when empty) |
+| `ENABLE_CRON` | — | `true` to enable scheduled jobs |
 
-### Auth
-| Method | Endpoint | Notes |
-|--------|----------|-------|
-| POST | `/auth/signup` | `{ name, email, password, state?, city?, pincode? }` → region derived |
-| POST | `/auth/login` | returns `{ token, user }` |
-| GET / PATCH | `/auth/me` | profile (auth) |
+**Frontend** (`frontend/.env.local`)
 
-### Products & Search
-| Method | Endpoint | Notes |
-|--------|----------|-------|
-| GET | `/products` | `?page&limit&search&category&sort&source&minPrice&maxPrice` → `{ data, page, total, totalPages, hasNext }` |
-| GET | `/products/:id` | also records a view |
-| GET | `/products/categories` | distinct categories |
-| POST/PUT/DELETE | `/products/:id` | **admin** |
-| GET | `/search?q=` · `/search/suggestions?q=` | full-text-ish search |
+| Variable | Required | Description |
+|---|:---:|---|
+| `NEXT_PUBLIC_API_URL` | ✅ | Backend base URL **without** `/api` |
+| `NEXTAUTH_SECRET` | ✅ | NextAuth session secret |
+| `NEXTAUTH_URL` | ✅ | Site URL (e.g. the Vercel domain) |
 
-### Cart & Orders (auth)
-`GET /cart` · `POST /cart` · `PATCH /cart/:id` · `DELETE /cart/:id` · `POST /cart/:id/save` · `POST /cart/:id/move` · `GET/POST /orders`
-
-### Reviews & Wishlist (auth)
-`GET /products/:id/reviews` · `POST /products/:id/reviews` · `DELETE /reviews/:id` · `GET /wishlist` · `POST/DELETE /wishlist/:productId`
-
-### Recommendations
-`GET /recommendations/trending` · `/region` · `/personalized` (auth) · `/recently-viewed` (auth) · `/bundles/:productId`
-
-### Analytics, Ingestion & Inventory (admin unless noted)
-`POST /analytics/track` (public) · `POST /analytics/recompute` · `GET /analytics/regions` · `POST /ingestion/sync` · `GET /ingestion/status` · `GET /inventory/alerts` · `GET /inventory/forecast`
-
-## 🧠 How the Intelligence Works
-
-**Trending score** (per region, recent 30-day window), persisted to `RegionAnalytics`:
-```
-score = views·0.2 + cartAdds·0.3 + purchases·0.5
-```
-
-**Recommendation score** (each component normalized 0–1):
-```
-score = 0.40·regionalPopularity + 0.30·userInterest + 0.20·rating + 0.10·recentTrend
-```
-`userInterest` is built from the categories a user has viewed/purchased (purchases weighted higher). All feeds fall back gracefully (region → national → top-rated) so the UI is never empty.
-
-## ⚙️ Background Jobs & Caching
-- **Jobs** (`ENABLE_CRON=true`): daily catalog refresh (`03:00`) + trending recompute (`*/30m`) via node-cron. Upgrade path: BullMQ + Redis workers.
-- **Caching** (`REDIS_URL` set): trending, recommendations and hot product queries are cached with sensible TTLs and busted on writes/recompute. Without Redis everything still works.
-
-## 🗺 Roadmap (Phase 3)
-Baseline implementations are included for FBT, smart search, demand forecasting and inventory intelligence. Natural next steps:
-- **MongoDB Atlas Search** for fuzzy/typo-tolerant search (drop-in replacement in `searchService`).
-- **Recharts** admin analytics dashboard UI (the `/analytics/regions` API is ready).
-- **BullMQ** background queues + **email automation** (order confirmation, price-drop & low-stock alerts).
-- API monitoring / structured logging exporters.
-
-## ✅ Verification Checklist
-```bash
-# Backend
-curl "localhost:5000/api/products?page=1&limit=5&sort=price_desc"
-curl "localhost:5000/api/products?search=iphone"
-curl "localhost:5000/api/recommendations/trending?region=West"
-# Auth flow: register → login → add to cart → checkout → review → wishlist
-# Admin:    login as admin → POST /api/ingestion/sync → GET /api/analytics/regions
-```
-- `cd frontend && npm run build` — should compile all routes with no errors.
+> Secrets live only in host dashboards / local `.env` files (git-ignored). Never commit real values.
 
 ---
+
+## ☁️ Deployment
+
+| Layer | Platform | Config |
+|---|---|---|
+| Frontend | **Vercel** | Root `frontend`, `next build` ([`frontend/vercel.json`](frontend/vercel.json)) |
+| Backend | **Render** | Node web service, `npm start`, health `/api/health` ([`render.yaml`](render.yaml)) |
+| Database | **MongoDB Atlas** | Prisma datasource |
+| Cache (opt) | Redis (e.g. Upstash) | `REDIS_URL` |
+
+Deploy order: **Atlas → Render (backend) → Vercel (frontend) → wire `CLIENT_ORIGINS`.** The full walkthrough is in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+
+---
+
+## ⚡ Performance Optimizations
+
+- **Server-side pagination & filtering** — the client never over-fetches; queries are bounded by `page`/`limit`.
+- **Optional Redis caching** — trending, recommendations and hot product queries cached with TTLs; **degrades gracefully** to direct computation when Redis is absent.
+- **Database indexing** — Prisma `@@index` on region, category, rating, and analytics query paths; unique `externalId` for O(1) dedupe.
+- **Batched/parallel DB writes** — ingestion and trending recompute run in concurrent chunks (cut recompute from >3 min to ~20s).
+- **Fire-and-forget analytics** — view/cart events never block the response path.
+- **Image optimization** — `next/image` with configured remote hosts (DummyJSON/FakeStore).
+- **Automatic code splitting** + static prerendering of most routes; `Suspense` boundary around `useSearchParams`.
+- **Motion budget** — GSAP only on the hero, IntersectionObserver-based reveals, and a global `prefers-reduced-motion` guard for 60fps.
+
+## 🔒 Security
+
+- **JWT** bearer auth ([`lib/token.js`](backend/src/lib/token.js)) + **NextAuth** session wrapping the token on the client.
+- **Password hashing** with bcrypt.
+- **RBAC** middleware (`requireAdmin`) protecting all mutating catalog, ingestion, analytics, and inventory routes.
+- **Zod validation** on body/query/params via a reusable `validate` middleware.
+- **CORS** with an explicit allow-list + safe Vercel wildcard matching; credentials enabled.
+- **Rate limiting** — global, auth, and heavy-operation limiters (`express-rate-limit`).
+- **Centralized error handling** — no stack traces leaked in production; Prisma errors mapped to clean HTTP codes.
+- **Secrets via environment** only; `.env*` git-ignored.
+
+---
+
+## 🧩 Challenges Solved
+
+- **Production CORS across two hosts** — Vercel previews use dynamic subdomains; implemented a real suffix-matcher (`origin.endsWith('.vercel.app')`) plus an env-extendable allow-list, and traced a "still blocked" bug to a **branch/deploy gap** (fix commits weren't on the deployed `main`).
+- **TypeScript → JavaScript migration** — converted the entire backend to CommonJS while preserving Prisma and the architecture, with a `migrate-legacy` script to backfill new required fields on existing documents.
+- **Dual-token auth** — bridging NextAuth's session model with a standalone Express API by carrying the API's JWT inside the NextAuth session and reflecting it via an Axios interceptor.
+- **Region-aware recommendations** — designing an analytics schema (`ProductView`/`CartEvent`/`PurchaseEvent` → `RegionAnalytics`) and two explainable scoring formulas instead of an opaque ML model.
+- **Catalog ingestion & dedupe** — normalizing two differently-shaped external APIs into one schema and idempotent `upsert` keyed on a synthetic `externalId`.
+
+## 🔭 Future Improvements
+
+- Swap `contains` search for **MongoDB Atlas Search** (fuzzy/typo-tolerant) behind the same `searchService` contract.
+- Move background jobs to **BullMQ + Redis** workers; add **email automation** (order/price-drop/low-stock).
+- Adopt **React Query/SWR** for client caching + optimistic cart updates, and shift more data fetching to **Server Components**.
+- Add automated tests (Jest/Vitest + Playwright) and CI.
+- Remove the stale `backend/vercel.json` (it references the pre-migration `src/server.ts`).
+
+## 🎓 Learning Outcomes
+
+Building QuickKart demonstrates the ability to design and ship a **decoupled full-stack system** end to end: a layered REST API with real auth/RBAC/validation, a data pipeline feeding recommendation logic, an ORM + indexed NoSQL data model, and a polished, accessible, animated frontend — then **deploy it to production** across Vercel + Render + Atlas and debug real-world issues (CORS, cold starts, branch/deploy gaps, dependency compatibility).
+
+## 🌟 Why This Project Stands Out
+
+- **Not a CRUD clone** — it has a genuine analytics → trending → recommendation pipeline with documented, explainable scoring.
+- **Production-grade backend** — clean layering, RBAC, Zod, centralized errors, rate limiting, graceful Redis fallback, and DB indexing.
+- **Actually deployed & debugged** — live on Vercel + Render + Atlas, with the messy production problems (CORS, deploy gaps, dependency upgrades) solved and documented.
+- **Premium, accessible UI** — dark-first design system with GSAP/Framer/Lenis motion that still respects `prefers-reduced-motion`.
+- **Readable and honest** — reusable services/components, documented architecture, and a README that reflects the code rather than marketing.
+
+---
+
 <div align="center">
-  <p>Built by Anurag Kumar — region-aware commerce, recommendations & analytics.</p>
+<sub>Built by <b>Anurag Kumar</b> — region-aware commerce, recommendations & analytics.</sub>
 </div>
