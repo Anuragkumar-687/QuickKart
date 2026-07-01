@@ -5,8 +5,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Trash2, Minus, Plus, Bookmark, ArrowUpToLine } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trash2, Minus, Plus, Bookmark, ArrowUpToLine, ArrowRight } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import Reveal from '../../components/motion/Reveal';
 
 export default function CartPage() {
     const { status } = useSession();
@@ -22,19 +24,19 @@ export default function CartPage() {
         if (status === 'unauthenticated') router.push('/login');
     }, [status, router]);
 
-    useEffect(() => {
-        if (status !== 'authenticated') return;
-        getCart()
-            .then((data) => setCart(normalize(data)))
-            .catch(() => setNotice('Failed to load cart'))
-            .finally(() => setLoading(false));
-    }, [status, getCart]);
-
     const normalize = (data) => ({
         items: data?.items || [],
         savedItems: data?.savedItems || [],
         summary: data?.summary || { subtotal: 0 },
     });
+
+    useEffect(() => {
+        if (status !== 'authenticated') return;
+        getCart()
+            .then((d) => setCart(normalize(d)))
+            .catch(() => setNotice('Failed to load cart'))
+            .finally(() => setLoading(false));
+    }, [status, getCart]);
 
     const run = async (id, fn) => {
         setBusyId(id);
@@ -51,8 +53,8 @@ export default function CartPage() {
 
     if (loading) {
         return (
-            <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-gray-900 mx-auto"></div>
+            <div className="flex min-h-[40vh] items-center justify-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-border border-t-foreground" />
             </div>
         );
     }
@@ -61,119 +63,119 @@ export default function CartPage() {
 
     if (items.length === 0 && savedItems.length === 0) {
         return (
-            <div className="container mx-auto px-4 py-16 text-center">
-                <div className="bg-white rounded-2xl shadow-lg p-12 max-w-md mx-auto">
-                    <div className="text-6xl mb-4">🛒</div>
-                    <h1 className="text-3xl font-bold mb-4 text-gray-900">Your Cart is Empty</h1>
-                    <p className="text-gray-600 mb-6">Start adding some amazing products!</p>
-                    <Link href="/products" className="inline-block bg-gray-900 text-white px-8 py-3 rounded-full font-semibold hover:bg-gray-800 transition-all">
-                        Continue Shopping
-                    </Link>
-                </div>
+            <div className="mx-auto max-w-md px-6 py-20 text-center">
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="card p-12">
+                    <div className="mb-4 text-6xl">🛒</div>
+                    <h1 className="mb-3 text-2xl font-bold text-foreground">Your cart is empty</h1>
+                    <p className="mb-6 text-muted-foreground">Start adding some amazing products!</p>
+                    <Link href="/products" className="btn btn-primary btn-md">Continue shopping</Link>
+                </motion.div>
             </div>
         );
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-            <h1 className="text-4xl font-bold mb-8 text-gray-900">Shopping Cart</h1>
+        <div className="mx-auto max-w-6xl px-6 py-10">
+            <h1 className="mb-8 text-3xl font-bold tracking-tight text-foreground md:text-4xl">Shopping Cart</h1>
 
-            {notice && (
-                <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg">{notice}</div>
-            )}
-
-            {/* Active items */}
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6 border border-gray-100">
-                <div className="p-6 space-y-6">
-                    {items.length === 0 && <p className="text-gray-500 text-center py-4">No active items. Check your saved items below.</p>}
-                    {items.map((item) => (
-                        <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b pb-6 last:border-b-0 last:pb-0 gap-4">
-                            <div className="flex items-center space-x-4 flex-1">
-                                <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-                                    <Image src={item.product.image} alt={item.product.name} fill className="object-cover" sizes="96px" />
-                                </div>
-                                <div className="flex-1">
-                                    <Link href={`/products/${item.product.id}`} className="font-bold text-lg hover:text-indigo-600 transition-colors text-gray-900 block mb-1">
-                                        {item.product.name}
-                                    </Link>
-                                    <p className="text-gray-600 font-medium">${item.product.price.toFixed(2)} each</p>
-                                    <p className="text-xs text-gray-400">{item.product.stock} in stock</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4 sm:gap-6">
-                                <div className="flex items-center border border-gray-300 rounded-full">
-                                    <button onClick={() => run(item.id, () => updateQuantity(item.id, item.quantity - 1))} disabled={busyId === item.id} className="p-2 hover:bg-gray-100 rounded-l-full disabled:opacity-40" aria-label="Decrease">
-                                        <Minus className="w-4 h-4" />
-                                    </button>
-                                    <span className="px-3 font-semibold min-w-[2rem] text-center">{item.quantity}</span>
-                                    <button onClick={() => run(item.id, () => updateQuantity(item.id, item.quantity + 1))} disabled={busyId === item.id} className="p-2 hover:bg-gray-100 rounded-r-full disabled:opacity-40" aria-label="Increase">
-                                        <Plus className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <span className="font-bold text-xl text-gray-900 min-w-[90px] text-right">
-                                    ${(item.product.price * item.quantity).toFixed(2)}
-                                </span>
-                                <div className="flex gap-1">
-                                    <button onClick={() => run(item.id, () => saveForLater(item.id))} disabled={busyId === item.id} title="Save for later" className="p-2.5 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-40">
-                                        <Bookmark className="w-5 h-5" />
-                                    </button>
-                                    <button onClick={() => run(item.id, () => removeItem(item.id))} disabled={busyId === item.id} title="Remove" className="p-2.5 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-40">
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                {items.length > 0 && (
-                    <div className="bg-gray-50 p-6 border-t border-gray-200">
-                        <div className="flex justify-between items-center max-w-md ml-auto">
-                            <span className="text-2xl font-bold text-gray-900">Subtotal:</span>
-                            <span className="text-3xl font-bold text-indigo-600">${summary.subtotal.toFixed(2)}</span>
-                        </div>
-                    </div>
+            <AnimatePresence>
+                {notice && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-4 overflow-hidden">
+                        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{notice}</div>
+                    </motion.div>
                 )}
-            </div>
+            </AnimatePresence>
 
-            {items.length > 0 && (
-                <div className="flex justify-end mb-10">
-                    <Link href="/checkout" className="bg-gray-900 text-white px-8 py-3 rounded-lg hover:bg-gray-800 transition-colors font-semibold">
-                        Proceed to Checkout →
-                    </Link>
-                </div>
-            )}
-
-            {/* Saved for later */}
-            {savedItems.length > 0 && (
-                <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
-                    <div className="px-6 py-4 border-b border-gray-100">
-                        <h2 className="text-xl font-bold text-gray-900">Saved for later ({savedItems.length})</h2>
+            <div className="grid gap-8 lg:grid-cols-3">
+                <div className="space-y-6 lg:col-span-2">
+                    <div className="card overflow-hidden">
+                        <AnimatePresence initial={false}>
+                            {items.map((item) => (
+                                <motion.div
+                                    key={item.id}
+                                    layout
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, x: -40, transition: { duration: 0.25 } }}
+                                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                                    className="flex flex-col gap-4 border-b p-5 last:border-0 sm:flex-row sm:items-center"
+                                >
+                                    <div className="flex flex-1 items-center gap-4">
+                                        <Link href={`/products/${item.product.id}`} className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border bg-muted">
+                                            <Image src={item.product.image} alt={item.product.name} fill className="object-cover" sizes="96px" />
+                                        </Link>
+                                        <div className="min-w-0">
+                                            <Link href={`/products/${item.product.id}`} className="block truncate font-semibold text-foreground hover:text-accent">{item.product.name}</Link>
+                                            <p className="text-sm text-muted-foreground">${item.product.price.toFixed(2)} each</p>
+                                            <p className="text-xs text-muted-foreground">{item.product.stock} in stock</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4 sm:justify-end">
+                                        <div className="flex items-center rounded-full border">
+                                            <button onClick={() => run(item.id, () => updateQuantity(item.id, item.quantity - 1))} disabled={busyId === item.id} className="grid h-9 w-9 place-items-center rounded-l-full hover:bg-muted disabled:opacity-40" aria-label="Decrease"><Minus className="h-4 w-4" /></button>
+                                            <span className="w-9 overflow-hidden text-center text-sm font-semibold">
+                                                <AnimatePresence mode="popLayout" initial={false}>
+                                                    <motion.span key={item.quantity} initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -12, opacity: 0 }} transition={{ duration: 0.18 }} className="inline-block">{item.quantity}</motion.span>
+                                                </AnimatePresence>
+                                            </span>
+                                            <button onClick={() => run(item.id, () => updateQuantity(item.id, item.quantity + 1))} disabled={busyId === item.id} className="grid h-9 w-9 place-items-center rounded-r-full hover:bg-muted disabled:opacity-40" aria-label="Increase"><Plus className="h-4 w-4" /></button>
+                                        </div>
+                                        <span className="w-20 text-right font-bold text-foreground">${(item.product.price * item.quantity).toFixed(2)}</span>
+                                        <div className="flex">
+                                            <motion.button whileTap={{ scale: 0.85 }} onClick={() => run(item.id, () => saveForLater(item.id))} disabled={busyId === item.id} title="Save for later" className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-40"><Bookmark className="h-5 w-5" /></motion.button>
+                                            <motion.button whileTap={{ scale: 0.85 }} onClick={() => run(item.id, () => removeItem(item.id))} disabled={busyId === item.id} title="Remove" className="grid h-9 w-9 place-items-center rounded-lg text-rose-500 hover:bg-rose-500/10 disabled:opacity-40"><Trash2 className="h-5 w-5" /></motion.button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                        {items.length === 0 && <p className="p-6 text-center text-muted-foreground">No active items. Check your saved items below.</p>}
                     </div>
-                    <div className="p-6 space-y-5">
-                        {savedItems.map((item) => (
-                            <div key={item.id} className="flex items-center justify-between gap-4">
-                                <div className="flex items-center space-x-4 flex-1">
-                                    <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-                                        <Image src={item.product.image} alt={item.product.name} fill className="object-cover" sizes="64px" />
-                                    </div>
-                                    <div>
-                                        <Link href={`/products/${item.product.id}`} className="font-semibold text-gray-900 hover:text-indigo-600">{item.product.name}</Link>
-                                        <p className="text-gray-600 text-sm">${item.product.price.toFixed(2)}</p>
-                                    </div>
+
+                    {savedItems.length > 0 && (
+                        <div className="card overflow-hidden">
+                            <div className="border-b px-5 py-4"><h2 className="font-bold text-foreground">Saved for later ({savedItems.length})</h2></div>
+                            <AnimatePresence initial={false}>
+                                {savedItems.map((item) => (
+                                    <motion.div key={item.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -40, transition: { duration: 0.25 } }} className="flex items-center justify-between gap-4 border-b p-5 last:border-0">
+                                        <div className="flex flex-1 items-center gap-4">
+                                            <Link href={`/products/${item.product.id}`} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border bg-muted"><Image src={item.product.image} alt={item.product.name} fill className="object-cover" sizes="64px" /></Link>
+                                            <div className="min-w-0"><Link href={`/products/${item.product.id}`} className="block truncate font-medium text-foreground hover:text-accent">{item.product.name}</Link><p className="text-sm text-muted-foreground">${item.product.price.toFixed(2)}</p></div>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <motion.button whileTap={{ scale: 0.9 }} onClick={() => run(item.id, () => moveToCart(item.id))} disabled={busyId === item.id} className="btn btn-ghost btn-sm"><ArrowUpToLine className="h-4 w-4" /> Move to cart</motion.button>
+                                            <motion.button whileTap={{ scale: 0.85 }} onClick={() => run(item.id, () => removeItem(item.id))} disabled={busyId === item.id} title="Remove" className="grid h-9 w-9 place-items-center rounded-lg text-rose-500 hover:bg-rose-500/10 disabled:opacity-40"><Trash2 className="h-5 w-5" /></motion.button>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
+                    )}
+                </div>
+
+                {/* Summary */}
+                <div className="lg:col-span-1">
+                    {items.length > 0 && (
+                        <motion.div layout className="card sticky top-24 p-6">
+                            <h2 className="mb-4 text-lg font-bold text-foreground">Order Summary</h2>
+                            <div className="space-y-3 text-sm">
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>Subtotal</span>
+                                    <span className="font-medium text-foreground">
+                                        <AnimatePresence mode="popLayout" initial={false}>
+                                            <motion.span key={summary.subtotal} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -10, opacity: 0 }} transition={{ duration: 0.2 }} className="inline-block">${summary.subtotal.toFixed(2)}</motion.span>
+                                        </AnimatePresence>
+                                    </span>
                                 </div>
-                                <div className="flex gap-1">
-                                    <button onClick={() => run(item.id, () => moveToCart(item.id))} disabled={busyId === item.id} title="Move to cart" className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-indigo-600 hover:bg-indigo-50 disabled:opacity-40">
-                                        <ArrowUpToLine className="w-4 h-4" /> Move to cart
-                                    </button>
-                                    <button onClick={() => run(item.id, () => removeItem(item.id))} disabled={busyId === item.id} title="Remove" className="p-2.5 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-40">
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
-                                </div>
+                                <div className="flex justify-between text-muted-foreground"><span>Shipping</span><span className="font-medium text-emerald-400">Free</span></div>
+                                <div className="flex justify-between border-t pt-3 text-base"><span className="font-semibold text-foreground">Total</span><span className="font-bold text-foreground">${summary.subtotal.toFixed(2)}</span></div>
                             </div>
-                        ))}
-                    </div>
+                            <Link href="/checkout" className="btn btn-accent btn-lg mt-6 w-full">Proceed to Checkout <ArrowRight className="h-4 w-4" /></Link>
+                            <Link href="/products" className="mt-3 block text-center text-sm text-muted-foreground hover:text-foreground">Continue shopping</Link>
+                        </motion.div>
+                    )}
                 </div>
-            )}
+            </div>
         </div>
     );
 }

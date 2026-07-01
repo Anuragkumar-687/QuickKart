@@ -4,101 +4,84 @@ import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Package, Calendar, DollarSign } from 'lucide-react';
+import Link from 'next/link';
+import { Package, Calendar } from 'lucide-react';
+
+const STATUS_STYLES = {
+    delivered: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+    shipped: 'bg-accent/10 text-accent',
+    processing: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    pending: 'bg-muted text-muted-foreground',
+    cancelled: 'bg-rose-500/10 text-danger',
+};
 
 export default function OrdersPage() {
-    const { data: session, status } = useSession();
+    const { status } = useSession();
     const router = useRouter();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (status === 'unauthenticated') {
-            router.push('/login');
-        }
+        if (status === 'unauthenticated') router.push('/login');
     }, [status, router]);
 
     useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                const res = await api.get('/orders');
-                setOrders(res.data);
-            } catch (error) {
-                console.error('Failed to fetch orders');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (status === 'authenticated') {
-            fetchOrders();
-        }
+        if (status !== 'authenticated') return;
+        api.get('/orders')
+            .then((res) => setOrders(res.data))
+            .catch(() => {})
+            .finally(() => setLoading(false));
     }, [status]);
 
     if (loading) {
         return (
-            <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mx-auto"></div>
+            <div className="flex min-h-[40vh] items-center justify-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-border border-t-foreground" />
             </div>
         );
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="mx-auto max-w-4xl px-6 py-10">
             <div className="mb-8">
-                <h1 className="text-4xl font-bold mb-2 text-gray-900">Order History</h1>
-                <p className="text-gray-600">Track and manage your orders</p>
+                <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">Order History</h1>
+                <p className="mt-2 text-muted-foreground">Track and manage your orders</p>
             </div>
 
             {orders.length === 0 ? (
-                <div className="text-center py-20 bg-white rounded-2xl shadow-lg">
-                    <div className="text-6xl mb-4">📦</div>
-                    <h2 className="text-2xl font-bold mb-2 text-gray-900">No Orders Yet</h2>
-                    <p className="text-gray-600 mb-6">Start shopping to see your orders here!</p>
+                <div className="card py-20 text-center">
+                    <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-muted">
+                        <Package className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h2 className="mb-2 text-xl font-bold text-foreground">No orders yet</h2>
+                    <p className="mb-6 text-muted-foreground">Start shopping to see your orders here.</p>
+                    <Link href="/products" className="btn btn-primary btn-md">Browse products</Link>
                 </div>
             ) : (
-                <div className="space-y-6">
-                    {orders.map((order, index) => (
-                        <div key={order.id || index} className="group bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 hover:border-blue-200">
-                            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
-                                <div className="space-y-2">
-                                    <div className="flex items-center space-x-2 text-gray-600 group-hover:text-blue-600 transition-colors duration-300">
-                                        <Package className="w-4 h-4 transition-transform duration-300 group-hover:scale-110" />
-                                        <p className="text-sm font-semibold">Order ID: <span className="text-gray-900">{order.id}</span></p>
-                                    </div>
-                                    <div className="flex items-center space-x-2 text-gray-600 group-hover:text-blue-600 transition-colors duration-300">
-                                        <Calendar className="w-4 h-4 transition-transform duration-300 group-hover:scale-110" />
-                                        <p className="text-sm font-semibold">
-                                            Date: <span className="text-gray-900">{new Date(order.createdAt).toLocaleDateString('en-US', {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric'
-                                            })}</span>
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                    <div className="flex items-center space-x-2 group-hover:scale-105 transition-transform duration-300">
-                                        <DollarSign className="w-5 h-5 text-blue-600" />
-                                        <p className="font-bold text-3xl text-gray-900">${order.totalAmount.toFixed(2)}</p>
-                                    </div>
-                                    <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold uppercase ${order.status === 'delivered' ? 'bg-green-600 text-white' :
-                                        order.status === 'shipped' ? 'bg-blue-600 text-white' :
-                                            'bg-yellow-500 text-white'
-                                        }`}>
-                                        {order.status}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="border-t-2 border-gray-100 pt-4 group-hover:border-blue-100 transition-colors duration-300">
-                                <div className="flex items-center space-x-2">
-                                    <div className="bg-blue-100 p-2 rounded-lg group-hover:bg-blue-200 transition-colors duration-300">
-                                        <Package className="w-5 h-5 text-blue-600" />
-                                    </div>
-                                    <p className="text-gray-700 font-semibold">
-                                        {order.items.length} {order.items.length === 1 ? 'item' : 'items'} in this order
+                <div className="space-y-5">
+                    {orders.map((order) => (
+                        <div key={order.id} className="card card-hover p-6">
+                            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                <div className="space-y-1.5">
+                                    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Package className="h-4 w-4" /> Order{' '}
+                                        <span className="font-mono text-foreground">#{String(order.id).slice(-8)}</span>
+                                    </p>
+                                    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Calendar className="h-4 w-4" />
+                                        {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                                     </p>
                                 </div>
+                                <div className="flex items-center gap-4">
+                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${STATUS_STYLES[order.status] || STATUS_STYLES.pending}`}>
+                                        {order.status}
+                                    </span>
+                                    <span className="text-2xl font-bold text-foreground">${order.totalAmount.toFixed(2)}</span>
+                                </div>
+                            </div>
+                            <div className="mt-4 flex items-center gap-2 border-t pt-4 text-sm text-muted-foreground">
+                                <Package className="h-4 w-4" />
+                                {order.items.length} {order.items.length === 1 ? 'item' : 'items'} in this order
                             </div>
                         </div>
                     ))}

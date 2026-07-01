@@ -1,36 +1,52 @@
 'use client';
 
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import ProductCard from './ProductCard';
+import ProductCardSkeleton from './ProductCardSkeleton';
+import Reveal, { EASE } from './motion/Reveal';
 
-export default function RecommendationSection({ title, subtitle, products, loading, icon }) {
-    // Hide the section entirely when there's nothing to show (and not loading).
+const container = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } };
+const item = { hidden: { opacity: 0, y: 26 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } } };
+
+export default function RecommendationSection({ title, subtitle, products, loading, icon, badge, href }) {
+    const reduced = useReducedMotion();
     if (!loading && (!products || products.length === 0)) return null;
 
     return (
-        <section className="py-8">
-            <div className="container mx-auto max-w-6xl px-4">
-                <div className="mb-5 flex items-end justify-between">
+        <section className="py-10">
+            <div className="mx-auto max-w-7xl px-6">
+                <Reveal className="mb-6 flex items-end justify-between gap-4">
                     <div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
-                            {icon} {title}
+                        <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+                            {icon}
+                            {title}
                         </h2>
-                        {subtitle && <p className="text-gray-500 mt-1">{subtitle}</p>}
+                        {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
                     </div>
-                </div>
+                    {href && (
+                        <Link href={href} className="hidden shrink-0 items-center gap-1 text-sm font-medium text-accent transition-all hover:gap-2 sm:inline-flex">
+                            View all <ArrowRight className="h-4 w-4" />
+                        </Link>
+                    )}
+                </Reveal>
 
-                {loading ? (
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                        {[0, 1, 2, 3].map((i) => (
-                            <div key={i} className="h-80 bg-gray-100 rounded-lg animate-pulse" />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                        {products.slice(0, 4).map((p) => (
-                            <ProductCard key={p.id} product={p} />
-                        ))}
-                    </div>
-                )}
+                <motion.div
+                    variants={reduced ? undefined : container}
+                    initial={reduced ? undefined : 'hidden'}
+                    whileInView={reduced ? undefined : 'show'}
+                    viewport={{ once: true, margin: '-60px' }}
+                    className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4"
+                >
+                    {loading
+                        ? [0, 1, 2, 3].map((i) => <ProductCardSkeleton key={i} />)
+                        : products.slice(0, 4).map((p) => (
+                              <motion.div key={p.id} variants={reduced ? undefined : item}>
+                                  <ProductCard product={p} badge={badge} />
+                              </motion.div>
+                          ))}
+                </motion.div>
             </div>
         </section>
     );
