@@ -51,96 +51,49 @@ export default function ProductForm({ initialData, isEdit = false }) {
         }
     };
 
+    const label = 'mb-2 block text-sm font-medium text-foreground';
+
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto">
+        <form onSubmit={handleSubmit} className="card mx-auto max-w-2xl space-y-5 p-6 sm:p-8">
             {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm font-medium text-danger">
                     {error}
                 </div>
             )}
 
             <div>
-                <label className="block text-gray-700 mb-2">Name</label>
-                <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
-                    required
-                />
+                <label className={label}>Name</label>
+                <input type="text" name="name" value={formData.name} onChange={handleChange} className="input" required />
             </div>
 
             <div>
-                <label className="block text-gray-700 mb-2">Description</label>
-                <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
-                    rows={4}
-                    required
-                />
+                <label className={label}>Description</label>
+                <textarea name="description" value={formData.description} onChange={handleChange} className="input" rows={4} required />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label className="block text-gray-700 mb-2">Price</label>
-                    <input
-                        type="number"
-                        name="price"
-                        value={formData.price}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
-                        min="0"
-                        step="0.01"
-                        required
-                    />
+                    <label className={label}>Price</label>
+                    <input type="number" name="price" value={formData.price} onChange={handleChange} className="input" min="0" step="0.01" required />
                 </div>
                 <div>
-                    <label className="block text-gray-700 mb-2">Stock</label>
-                    <input
-                        type="number"
-                        name="stock"
-                        value={formData.stock}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
-                        min="0"
-                        required
-                    />
+                    <label className={label}>Stock</label>
+                    <input type="number" name="stock" value={formData.stock} onChange={handleChange} className="input" min="0" required />
                 </div>
             </div>
 
             <div>
-                <label className="block text-gray-700 mb-2">Category</label>
-                <input
-                    type="text"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
-                    required
-                />
+                <label className={label}>Category</label>
+                <input type="text" name="category" value={formData.category} onChange={handleChange} className="input" required />
             </div>
 
             <div>
-                <label className="block text-gray-700 mb-2">Image URL</label>
-                <input
-                    type="url"
-                    name="image"
-                    value={formData.image}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
-                    required
-                />
+                <label className={label}>Image URL</label>
+                <input type="url" name="image" value={formData.image} onChange={handleChange} className="input" required />
             </div>
 
-            <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
-            >
-                {loading ? 'Saving...' : isEdit ? 'Update Product' : 'Create Product'}
+            <button type="submit" disabled={loading} className="btn btn-primary btn-lg w-full">
+                {loading ? 'Saving…' : isEdit ? 'Update Product' : 'Create Product'}
             </button>
         </form>
     );

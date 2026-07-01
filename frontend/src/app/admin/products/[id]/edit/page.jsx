@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import api from '../../../../../lib/api';
 import ProductForm from '../../../../../components/ProductForm';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 export default function EditProductPage() {
     const params = useParams();
@@ -28,16 +30,23 @@ export default function EditProductPage() {
     }, [params.id]);
 
     if (loading) {
-        return <div className="p-8 text-center">Loading...</div>;
+        return (
+            <div className="flex min-h-[40vh] items-center justify-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-border border-t-foreground" />
+            </div>
+        );
     }
 
     if (!product) {
-        return <div className="p-8 text-center text-red-500">Product not found</div>;
+        return <div className="px-6 py-20 text-center text-danger">Product not found</div>;
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-8 text-center">Edit Product</h1>
+        <div className="mx-auto max-w-2xl px-6 py-10">
+            <Link href="/admin" className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="h-4 w-4" /> Back to dashboard
+            </Link>
+            <h1 className="mb-8 text-3xl font-bold tracking-tight text-foreground">Edit Product</h1>
             <ProductForm initialData={product} isEdit />
         </div>
     );

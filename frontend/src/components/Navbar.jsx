@@ -3,164 +3,165 @@
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { ShoppingCart, Menu, X, User, LogOut, Heart } from 'lucide-react';
+import { ShoppingCart, Menu, X, User, LogOut, Heart, Search, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import ThemeToggle from './ThemeToggle';
+import Magnetic from './motion/Magnetic';
+
+function CountBadge({ n }) {
+    return (
+        <motion.span
+            key={n}
+            initial={{ scale: 0.4 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 14 }}
+            className="absolute -right-1 -top-1 grid h-4 min-w-[1rem] place-items-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-foreground"
+        >
+            {n}
+        </motion.span>
+    );
+}
+
+function IconLink({ href, label, count, children }) {
+    return (
+        <Link href={href} aria-label={label} className="relative grid h-9 w-9 place-items-center rounded-full text-foreground transition-colors hover:bg-muted">
+            {children}
+            {count > 0 && <CountBadge n={count} />}
+        </Link>
+    );
+}
 
 export default function Navbar() {
     const { data: session } = useSession();
     const { cartCount } = useCart();
     const { count: wishlistCount } = useWishlist();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [q, setQ] = useState('');
+    const router = useRouter();
+    const pathname = usePathname();
+
+    // The products page has its own live search toolbar — avoid a duplicate.
+    const showSearch = pathname !== '/products';
+
+    const submitSearch = (e) => {
+        e.preventDefault();
+        const term = q.trim();
+        router.push(term ? `/products?search=${encodeURIComponent(term)}` : '/products');
+        setIsMenuOpen(false);
+    };
 
     return (
-        <nav className="bg-gray-50 shadow-sm sticky top-0 z-50 border-b border-gray-200">
-            <div className="container mx-auto px-4">
-                <div className="flex justify-between items-center h-16">
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center space-x-2 shrink-0 group">
-                        <ShoppingCart className="w-6 h-6 text-gray-900" />
-                        <span className="text-2xl font-bold text-gray-900 tracking-tight">
-                            QuickKart
+        <motion.header
+            initial={{ y: -120, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed inset-x-0 top-0 z-50"
+        >
+            <div className="mx-auto mt-3 max-w-7xl px-4">
+                <nav className="glass flex h-14 items-center justify-between gap-3 rounded-2xl border px-3 shadow-xl shadow-black/10 sm:px-4">
+                    <Link href="/" className="flex shrink-0 items-center gap-2">
+                        <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary text-primary-foreground">
+                            <ShoppingBag className="h-5 w-5" />
                         </span>
+                        <span className="text-lg font-bold tracking-tight">QuickKart</span>
                     </Link>
 
-                    {/* Desktop Menu */}
-                    <div className="hidden md:flex items-center space-x-8">
-                        <Link href="/products" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
+                    {showSearch ? (
+                        <form onSubmit={submitSearch} className="hidden max-w-md flex-1 md:block">
+                            <div className="relative">
+                                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <input
+                                    value={q}
+                                    onChange={(e) => setQ(e.target.value)}
+                                    placeholder="Search products..."
+                                    className="w-full rounded-full border bg-card/60 py-2 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground transition focus:bg-card focus:outline-none focus:ring-2 focus:ring-accent/40"
+                                />
+                            </div>
+                        </form>
+                    ) : (
+                        <div className="hidden flex-1 md:block" />
+                    )}
+
+                    <div className="flex items-center gap-0.5 sm:gap-1">
+                        <Link href="/products" className="hidden rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground lg:block">
                             Products
                         </Link>
                         {session?.user?.role === 'admin' && (
-                            <Link href="/admin" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
+                            <Link href="/admin" className="hidden rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground lg:block">
                                 Admin
                             </Link>
                         )}
 
-                        <Link href="/cart" className="text-gray-600 hover:text-blue-600 font-medium transition-colors flex items-center gap-2 group">
-                            <div className="relative">
-                                <ShoppingCart className="w-5 h-5" />
-                                {cartCount > 0 && (
-                                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
-                                        {cartCount}
-                                    </span>
-                                )}
-                            </div>
-                            <span>Cart</span>
-                        </Link>
+                        <ThemeToggle />
+                        {session && <IconLink href="/wishlist" label="Wishlist" count={wishlistCount}><Heart className="h-5 w-5" /></IconLink>}
+                        <IconLink href="/cart" label="Cart" count={cartCount}><ShoppingCart className="h-5 w-5" /></IconLink>
 
                         {session ? (
-                            <div className="flex items-center space-x-6 pl-6 border-l border-gray-200">
-                                <Link href="/wishlist" className="text-gray-600 hover:text-red-600 font-medium transition-colors flex items-center gap-2">
-                                    <div className="relative">
-                                        <Heart className="w-5 h-5" />
-                                        {wishlistCount > 0 && (
-                                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
-                                                {wishlistCount}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <span>Wishlist</span>
-                                </Link>
-                                <Link href="/orders" className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
-                                    Orders
-                                </Link>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-2 text-gray-900 font-medium bg-gray-100 px-3 py-1.5 rounded-full">
-                                        <User className="w-4 h-4 text-gray-500" />
-                                        <span>{session.user?.name}</span>
-                                    </div>
-                                    <button
-                                        onClick={() => signOut()}
-                                        className="flex items-center gap-2 text-red-600 hover:text-red-700 font-medium transition-colors bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg"
-                                    >
-                                        <LogOut className="w-4 h-4" />
-                                        <span>Logout</span>
-                                    </button>
+                            <div className="hidden items-center gap-2 pl-1 md:flex">
+                                <Link href="/orders" className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Orders</Link>
+                                <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-sm font-medium">
+                                    <User className="h-4 w-4 text-muted-foreground" />
+                                    <span className="max-w-[7rem] truncate">{session.user?.name}</span>
                                 </div>
+                                <button onClick={() => signOut()} aria-label="Logout" className="grid h-9 w-9 place-items-center rounded-full text-foreground transition-colors hover:bg-muted">
+                                    <LogOut className="h-5 w-5" />
+                                </button>
                             </div>
                         ) : (
-                            <div className="flex items-center space-x-4">
-                                <Link
-                                    href="/login"
-                                    className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
-                                >
-                                    Login
-                                </Link>
-                                <Link
-                                    href="/register"
-                                    className="bg-gray-900 text-white px-5 py-2 rounded-lg font-medium hover:bg-gray-800 transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
-                                >
-                                    Register
-                                </Link>
+                            <div className="hidden items-center gap-2 pl-1 md:flex">
+                                <Link href="/login" className="btn btn-ghost btn-sm">Login</Link>
+                                <Magnetic>
+                                    <Link href="/register" className="btn btn-accent btn-sm">Register</Link>
+                                </Magnetic>
                             </div>
                         )}
+
+                        <button className="grid h-9 w-9 place-items-center rounded-full text-foreground hover:bg-muted md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Menu">
+                            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                        </button>
                     </div>
+                </nav>
 
-                    {/* Mobile Menu Button */}
-                    <button
-                        className="md:hidden text-gray-700"
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    >
-                        {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                    </button>
-                </div>
-
-                {/* Mobile Menu */}
-                {isMenuOpen && (
-                    <div className="md:hidden py-4 border-t border-gray-100">
-                        <div className="flex flex-col space-y-4">
-                            <Link href="/products" className="text-gray-600 hover:text-blue-600 font-medium px-2">
-                                Products
-                            </Link>
-                            {session?.user?.role === 'admin' && (
-                                <Link href="/admin" className="text-gray-600 hover:text-blue-600 font-medium px-2">
-                                    Admin Dashboard
-                                </Link>
-                            )}
-                            <Link href="/cart" className="text-gray-600 hover:text-blue-600 font-medium px-2">
-                                Cart
-                            </Link>
-
-                            {session ? (
-                                <div className="pt-4 border-t border-gray-100 space-y-4">
-                                    <Link href="/wishlist" className="text-gray-600 hover:text-red-600 font-medium px-2 block">
-                                        Wishlist{wishlistCount > 0 ? ` (${wishlistCount})` : ''}
-                                    </Link>
-                                    <Link href="/orders" className="text-gray-600 hover:text-blue-600 font-medium px-2 block">
-                                        My Orders
-                                    </Link>
-                                    <div className="px-2 text-gray-900 font-medium flex items-center gap-2">
-                                        <User className="w-4 h-4" />
-                                        {session.user?.name}
+                {/* Mobile dropdown */}
+                <AnimatePresence>
+                    {isMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                            transition={{ duration: 0.2 }}
+                            className="glass mt-2 rounded-2xl border p-3 shadow-xl md:hidden"
+                        >
+                            <form onSubmit={submitSearch} className="mb-2">
+                                <div className="relative">
+                                    <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                    <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products..." className="w-full rounded-full border bg-card/60 py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/40" />
+                                </div>
+                            </form>
+                            <div className="space-y-1">
+                                <Link href="/products" onClick={() => setIsMenuOpen(false)} className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">Products</Link>
+                                {session?.user?.role === 'admin' && <Link href="/admin" onClick={() => setIsMenuOpen(false)} className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">Admin Dashboard</Link>}
+                                {session && <Link href="/wishlist" onClick={() => setIsMenuOpen(false)} className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">Wishlist{wishlistCount > 0 ? ` (${wishlistCount})` : ''}</Link>}
+                                <Link href="/cart" onClick={() => setIsMenuOpen(false)} className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">Cart{cartCount > 0 ? ` (${cartCount})` : ''}</Link>
+                                {session ? (
+                                    <>
+                                        <Link href="/orders" onClick={() => setIsMenuOpen(false)} className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">My Orders</Link>
+                                        <button onClick={() => { signOut(); setIsMenuOpen(false); }} className="btn btn-secondary btn-md mt-1 w-full"><LogOut className="h-4 w-4" /> Logout</button>
+                                    </>
+                                ) : (
+                                    <div className="flex gap-2 pt-1">
+                                        <Link href="/login" onClick={() => setIsMenuOpen(false)} className="btn btn-outline btn-md flex-1">Login</Link>
+                                        <Link href="/register" onClick={() => setIsMenuOpen(false)} className="btn btn-accent btn-md flex-1">Register</Link>
                                     </div>
-                                    <button
-                                        onClick={() => signOut()}
-                                        className="w-full flex items-center justify-center gap-2 text-red-600 bg-red-50 py-2 rounded-lg font-medium"
-                                    >
-                                        <LogOut className="w-4 h-4" />
-                                        Logout
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col space-y-3 pt-2">
-                                    <Link
-                                        href="/login"
-                                        className="text-gray-600 hover:text-blue-600 font-medium text-center py-2"
-                                    >
-                                        Login
-                                    </Link>
-                                    <Link
-                                        href="/register"
-                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg text-center font-medium"
-                                    >
-                                        Register
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
-        </nav>
+        </motion.header>
     );
 }

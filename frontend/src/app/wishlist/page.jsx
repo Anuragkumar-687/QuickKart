@@ -23,29 +23,27 @@ export default function WishlistPage() {
 
     if (status === 'loading') {
         return (
-            <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-gray-900 mx-auto"></div>
+            <div className="flex min-h-[40vh] items-center justify-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-border border-t-foreground" />
             </div>
         );
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
-            <h1 className="text-4xl font-bold mb-8 text-gray-900 flex items-center gap-3">
-                <Heart className="w-8 h-8 text-red-500 fill-red-500" /> My Wishlist
+        <div className="mx-auto max-w-7xl px-6 py-10">
+            <h1 className="mb-8 flex items-center gap-3 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+                <Heart className="h-8 w-8 fill-rose-500 text-rose-500" /> My Wishlist
             </h1>
 
             {items.length === 0 ? (
-                <div className="text-center py-20 bg-white rounded-2xl shadow-lg">
-                    <div className="text-6xl mb-4">💝</div>
-                    <h2 className="text-2xl font-bold mb-2 text-gray-900">Your wishlist is empty</h2>
-                    <p className="text-gray-600 mb-6">Tap the heart on any product to save it here.</p>
-                    <Link href="/products" className="inline-block bg-gray-900 text-white px-8 py-3 rounded-full font-semibold hover:bg-gray-800 transition-all">
-                        Browse products
-                    </Link>
+                <div className="card py-20 text-center">
+                    <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-muted text-3xl">💝</div>
+                    <h2 className="mb-2 text-xl font-bold text-foreground">Your wishlist is empty</h2>
+                    <p className="mb-6 text-muted-foreground">Tap the heart on any product to save it here.</p>
+                    <Link href="/products" className="btn btn-primary btn-md">Browse products</Link>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
                     {items.map((w) => (
                         <ProductCard key={w.id} product={w.product} />
                     ))}
