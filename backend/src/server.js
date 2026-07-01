@@ -13,40 +13,31 @@ const { notFound, errorHandler } = require('./middleware/errorHandler');
 const app = express();
 app.set('trust proxy', 1);
 
-// ---- CORS (must be registered before all routes) ----
-// Allowed origins = safe built-in defaults ∪ CLIENT_ORIGINS env (comma-separated).
-// Entries may be exact ("https://app.vercel.app") or wildcard subdomains ("*.vercel.app").
-// The defaults are hard-coded so the API works even if CLIENT_ORIGINS is unset on the host.
-const DEFAULT_ORIGINS = [
+// ---- CORS (registered before all routes) ----
+// Exact allow-list (extendable via CLIENT_ORIGINS) + a real wildcard that
+// matches EVERY Vercel production and preview domain via string suffix — never
+// a literal "*.vercel.app" comparison.
+const allowedOrigins = [
   'http://localhost:3000',
   'https://quick-kart-black.vercel.app',
-  '*.vercel.app', // all Vercel production + preview deployments
+  ...env.CLIENT_ORIGINS,
 ];
-const ALLOWED_ORIGINS = [...new Set([...DEFAULT_ORIGINS, ...env.CLIENT_ORIGINS])];
 
 function isOriginAllowed(origin) {
-  return ALLOWED_ORIGINS.some((allowed) => {
-    if (allowed === origin) return true;
-    if (allowed.startsWith('*.')) {
-      const suffix = allowed.slice(1); // ".vercel.app"
-      try {
-        return new URL(origin).host.endsWith(suffix);
-      } catch (_) {
-        return false;
-      }
-    }
-    return false;
-  });
+  if (!origin) return true; // non-browser clients (curl, server-to-server)
+  if (allowedOrigins.includes(origin)) return true;
+  if (origin.endsWith('.vercel.app')) return true; // every Vercel prod + preview domain
+  return false;
 }
 
 const corsOptions = {
-  origin(origin, cb) {
-    // No Origin header → non-browser client (curl / server-to-server / same-origin).
-    if (!origin) return cb(null, true);
-    if (env.isDev || isOriginAllowed(origin)) return cb(null, true);
-    logger.warn('[cors] blocked origin:', origin);
-    // Reject cleanly (no ACAO header) rather than throwing → avoids a 500 on preflight.
-    return cb(null, false);
+  origin: (origin, cb) => {
+    if (isOriginAllowed(origin)) {
+      console.log('Allowed origin:', origin);
+      return cb(null, true);
+    }
+    console.warn('Blocked origin:', origin);
+    return cb(null, false); // reject cleanly (no ACAO header, no 500)
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -55,7 +46,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-logger.info('[cors] allowed origins:', ALLOWED_ORIGINS.join(', '));
 
 app.use(express.json({ limit: '1mb' }));
 
