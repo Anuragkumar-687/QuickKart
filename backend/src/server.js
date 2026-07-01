@@ -13,35 +13,39 @@ const { notFound, errorHandler } = require('./middleware/errorHandler');
 const app = express();
 app.set('trust proxy', 1);
 
-// ---- CORS ----
-// CLIENT_ORIGINS accepts exact origins and wildcard subdomains, e.g.
-// "https://quickkart.vercel.app,*.vercel.app".
+// ---- CORS (registered before all routes) ----
+// Exact allow-list (extendable via CLIENT_ORIGINS) + a real wildcard that
+// matches EVERY Vercel production and preview domain via string suffix — never
+// a literal "*.vercel.app" comparison.
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://quick-kart-black.vercel.app',
+  ...env.CLIENT_ORIGINS,
+];
+
 function isOriginAllowed(origin) {
-  return env.CLIENT_ORIGINS.some((allowed) => {
-    if (allowed === origin) return true;
-    if (allowed.startsWith('*.')) {
-      const suffix = allowed.slice(1); // ".vercel.app"
-      try {
-        return new URL(origin).host.endsWith(suffix);
-      } catch (_) {
-        return false;
-      }
-    }
-    return false;
-  });
+  if (!origin) return true; // non-browser clients (curl, server-to-server)
+  if (allowedOrigins.includes(origin)) return true;
+  if (origin.endsWith('.vercel.app')) return true; // every Vercel prod + preview domain
+  return false;
 }
 
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      if (!origin) return cb(null, true); // same-origin / curl / server-to-server
-      if (env.isDev || isOriginAllowed(origin)) return cb(null, true);
-      logger.warn('[cors] blocked origin:', origin);
-      return cb(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: (origin, cb) => {
+    if (isOriginAllowed(origin)) {
+      console.log('Allowed origin:', origin);
+      return cb(null, true);
+    }
+    console.warn('Blocked origin:', origin);
+    return cb(null, false); // reject cleanly (no ACAO header, no 500)
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json({ limit: '1mb' }));
 
