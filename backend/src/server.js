@@ -14,11 +14,28 @@ const app = express();
 app.set('trust proxy', 1);
 
 // ---- CORS ----
+// CLIENT_ORIGINS accepts exact origins and wildcard subdomains, e.g.
+// "https://quickkart.vercel.app,*.vercel.app".
+function isOriginAllowed(origin) {
+  return env.CLIENT_ORIGINS.some((allowed) => {
+    if (allowed === origin) return true;
+    if (allowed.startsWith('*.')) {
+      const suffix = allowed.slice(1); // ".vercel.app"
+      try {
+        return new URL(origin).host.endsWith(suffix);
+      } catch (_) {
+        return false;
+      }
+    }
+    return false;
+  });
+}
+
 app.use(
   cors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true); // same-origin / curl / server-to-server
-      if (env.isDev || env.CLIENT_ORIGINS.includes(origin)) return cb(null, true);
+      if (env.isDev || isOriginAllowed(origin)) return cb(null, true);
       logger.warn('[cors] blocked origin:', origin);
       return cb(new Error('Not allowed by CORS'));
     },
