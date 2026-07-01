@@ -105,7 +105,11 @@ export default function ProductDetailsPage() {
 
     const handleWishlist = async () => {
         if (!session) return router.push('/login');
-        await toggle(product.id);
+        try {
+            await toggle(product.id);
+        } catch (err) {
+            alert(err.response?.data?.message || 'Could not update your wishlist. Please try again.');
+        }
     };
 
     const handleSubmitReview = async (e) => {

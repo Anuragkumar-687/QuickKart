@@ -54,8 +54,9 @@ export default function ProductCard({ product, badge }) {
         if (!session) return router.push('/login');
         try {
             await toggle(productId);
-        } catch (_) {
-            /* ignore */
+        } catch (err) {
+            console.error('Wishlist error:', err);
+            alert(err.response?.data?.message || 'Could not update your wishlist. Please try again.');
         }
     };
 
