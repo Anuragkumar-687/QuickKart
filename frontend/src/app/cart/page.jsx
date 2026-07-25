@@ -9,16 +9,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Minus, Plus, Bookmark, ArrowUpToLine, ArrowRight } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import Reveal from '../../components/motion/Reveal';
-
+const EMPTY_SUMMARY = {
+    subtotal: 0,
+}; 
 export default function CartPage() {
     const { status } = useSession();
     const router = useRouter();
     const { getCart, updateQuantity, removeItem, saveForLater, moveToCart } = useCart();
 
-    const [cart, setCart] = useState({ items: [], savedItems: [], summary: { subtotal: 0 } });
+    const [cart, setCart] = useState({
+        items: [],
+        savedItems: [],
+        summary: EMPTY_SUMMARY,
+    });
     const [loading, setLoading] = useState(true);
     const [busyId, setBusyId] = useState(null);
-    const [notice, setNotice] = useState('');
+    const [notice, setNotice] = useState(null);
 
     useEffect(() => {
         if (status === 'unauthenticated') router.push('/login');
@@ -27,14 +33,17 @@ export default function CartPage() {
     const normalize = (data) => ({
         items: data?.items || [],
         savedItems: data?.savedItems || [],
-        summary: data?.summary || { subtotal: 0 },
+        summary: data?.summary || EMPTY_SUMMARY,
     });
 
     useEffect(() => {
         if (status !== 'authenticated') return;
         getCart()
             .then((d) => setCart(normalize(d)))
-            .catch(() => setNotice('Failed to load cart'))
+            .catch((err) => {
+                console.error('Failed to load cart:', err);
+                setNotice('Failed to load cart');
+            })
             .finally(() => setLoading(false));
     }, [status, getCart]);
 
