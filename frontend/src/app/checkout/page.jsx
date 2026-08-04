@@ -92,6 +92,7 @@ export default function CheckoutPage() {
     const back = () => setStep((s) => Math.max(0, s - 1));
 
     const handlePlaceOrder = async () => {
+        if (processing) return;
         setProcessing(true);
         try {
             const res = await api.post('/orders'); // unchanged backend call
@@ -153,7 +154,7 @@ export default function CheckoutPage() {
                                         </div>
                                         <div>
                                             <label className={inputBase}>Pincode</label>
-                                            <input value={shipping.pincode} onChange={(e) => setShipping((p) => ({ ...p, pincode: e.target.value }))} placeholder="400001" className="input" />
+                                            <input value={shipping.pincode} onChange={(e) => setShipping((p) => ({ ...p, pincode: e.target.value.replace(/\D/g, '').slice(0, 6),}))} placeholder="400001"className="input"/>
                                         </div>
                                     </div>
                                 </div>
