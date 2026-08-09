@@ -14,7 +14,7 @@ export default function WishlistPage() {
     const { items, refresh } = useWishlist();
 
     useEffect(() => {
-        if (status === 'unauthenticated') router.push('/login');
+        if (status === 'unauthenticated') router.replace('/login');
     }, [status, router]);
 
     useEffect(() => {
@@ -23,8 +23,13 @@ export default function WishlistPage() {
 
     if (status === 'loading') {
         return (
-            <div className="flex min-h-[40vh] items-center justify-center">
+            <div
+                className="flex min-h-[40vh] items-center justify-center"
+                role="status"
+                aria-label="Loading wishlist"
+            >
                 <div className="h-10 w-10 animate-spin rounded-full border-2 border-border border-t-foreground" />
+                <span className="sr-only">Loading wishlist...</span>
             </div>
         );
     }
