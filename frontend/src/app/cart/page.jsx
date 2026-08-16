@@ -76,7 +76,7 @@ export default function CartPage() {
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="card p-12">
                     <div className="mb-4 text-6xl">🛒</div>
                     <h1 className="mb-3 text-2xl font-bold text-foreground">Your cart is empty</h1>
-                    <p className="mb-6 text-muted-foreground">Start adding some amazing products!</p>
+                    <p className="mb-6 text-muted-foreground">Start adding some amazing products to your cart!</p>
                     <Link href="/products" className="btn btn-primary btn-md">Continue shopping</Link>
                 </motion.div>
             </div>
