@@ -13,21 +13,34 @@ const WebGLSlides = dynamic(() => import('./WebGLSlides'), { ssr: false });
 
 const AUTOPLAY_MS = 6000;
 
+/**
+ * Non-WebGL path: reduced-motion users always land here, and everyone does if
+ * the shader can't start. It mirrors the WebGL composition — product contained
+ * on a light plate over a warm backdrop — rather than stretching a square
+ * cut-out to cover a 3:1 frame, which cropped it into an unrecognisable blur.
+ */
 function Fallback({ slide }) {
     return (
-        <AnimatePresence mode="wait">
-            <motion.div
-                key={slide.id}
-                initial={{ opacity: 0, scale: 1.04 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                className="absolute inset-0"
-            >
-                <Image src={slide.image} alt="" fill priority sizes="100vw" className="object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/20" />
-            </motion.div>
-        </AnimatePresence>
+        <div
+            className="absolute inset-0 overflow-hidden"
+            style={{ background: 'linear-gradient(100deg, #0e0e10 0%, #1c1710 55%, #241a0b 100%)' }}
+        >
+            {/* Deliberately not animated in from opacity 0. This is the safety
+                net: if the animation never runs, the product must still be on
+                screen. The dots and the copy already signal the slide change. */}
+            <div className="plate absolute left-1/2 top-5 h-[40%] w-[74%] -translate-x-1/2 overflow-hidden rounded-2xl sm:left-auto sm:right-[4%] sm:top-1/2 sm:h-[82%] sm:w-[45%] sm:translate-x-0 sm:-translate-y-1/2">
+                <Image
+                    key={slide.id}
+                    src={slide.image}
+                    alt=""
+                    fill
+                    priority
+                    sizes="(max-width: 640px) 74vw, 45vw"
+                    className="object-contain p-5"
+                />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent sm:bg-gradient-to-r sm:from-black/70 sm:via-black/25 sm:to-transparent" />
+        </div>
     );
 }
 
@@ -126,20 +139,22 @@ export default function DealHero({ products = [], loading }) {
 
                 {slides.length > 1 && (
                     <>
-                        <button
-                            onClick={() => go(-1)}
-                            aria-label="Previous product"
-                            className="absolute left-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur transition hover:bg-black/70 sm:grid"
-                        >
-                            <ChevronLeft className="h-5 w-5" />
-                        </button>
-                        <button
-                            onClick={() => go(1)}
-                            aria-label="Next product"
-                            className="absolute right-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur transition hover:bg-black/70 sm:grid"
-                        >
-                            <ChevronRight className="h-5 w-5" />
-                        </button>
+                        <div className="absolute bottom-4 right-4 z-20 hidden items-center gap-2 sm:flex">
+                            <button
+                                onClick={() => go(-1)}
+                                aria-label="Previous product"
+                                className="grid h-9 w-9 place-items-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/75"
+                            >
+                                <ChevronLeft className="h-5 w-5" />
+                            </button>
+                            <button
+                                onClick={() => go(1)}
+                                aria-label="Next product"
+                                className="grid h-9 w-9 place-items-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/75"
+                            >
+                                <ChevronRight className="h-5 w-5" />
+                            </button>
+                        </div>
 
                         <div className="absolute bottom-5 left-6 z-20 flex items-center gap-2 sm:bottom-4 sm:left-10">
                             {slides.map((s, i) => (

@@ -177,7 +177,9 @@ export default function WebGLSlides({ images, index, onFail }) {
         const loader = new THREE.TextureLoader();
         loader.setCrossOrigin('anonymous');
 
-        const optimized = (src) => `/_next/image?url=${encodeURIComponent(src)}&w=1920&q=70`;
+        // q must be one of next.config images.qualities (default [75]); any other
+        // value is rejected with 400 in production and kills every texture.
+        const optimized = (src) => `/_next/image?url=${encodeURIComponent(src)}&w=1920&q=75`;
 
         const loadTexture = (src) =>
             new Promise((resolve, reject) => {
