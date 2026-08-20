@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import api from '../lib/api';
+import api, { API_BASE_URL } from '../lib/api';
 
 const WishlistContext = createContext(null);
 
@@ -25,7 +25,12 @@ export function WishlistProvider({ children }) {
     try {
       const res = await api.get('/wishlist');
       apply(res.data);
-    } catch (_) {
+    } catch (error) {
+      if (error?.response) {
+        console.error('Failed to load wishlist:', error.response.data);
+      } else {
+        console.warn(`Wishlist unavailable: no response from ${API_BASE_URL}. Is the backend running?`);
+      }
       apply([]);
     }
   }, [session]);

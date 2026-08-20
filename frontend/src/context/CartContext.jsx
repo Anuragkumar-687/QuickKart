@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import api from '../lib/api';
+import api, { API_BASE_URL } from '../lib/api';
 
 const CartContext = createContext(null);
 
@@ -28,7 +28,13 @@ export function CartProvider({ children }) {
             const res = await api.get('/cart');
             setCartCount(unitsOf(res.data));
         } catch (error) {
-            console.error('Failed to fetch cart count:', error?.response?.data || error.message);
+            if (error?.response) {
+                console.error('Failed to fetch cart count:', error.response.data);
+            } else {
+                console.warn(
+                    `Cart unavailable: no response from ${API_BASE_URL}. Is the backend running?`,
+                );
+            }
             setCartCount(0);
         }
     }, [session]);
