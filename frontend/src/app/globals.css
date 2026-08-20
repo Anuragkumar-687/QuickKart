@@ -4,44 +4,71 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ----------------------------------------------------------------------------
-   Design tokens. Dark is the primary, premium experience; light is a refined
-   fallback. Primary inverts so CTAs are always the highest-contrast element.
+   Midnight Bazaar tokens.
+
+   Warm-neutral dark, not the usual cool indigo/violet. Saffron is the only
+   action colour; green is reserved exclusively for savings and in-stock, so a
+   green pixel always means "good for the buyer". Product photography is the
+   only other source of colour — which is how real storefronts work.
 ---------------------------------------------------------------------------- */
 :root {
   --background: #ffffff;
-  --surface: #f7f7f8;
-  --foreground: #0a0a0a;
+  --surface: #f2f3f5;
+  --foreground: #14161a;
   --card: #ffffff;
-  --muted: #f1f1f3;
-  --muted-foreground: #6b7280;
-  --border: rgba(10, 10, 12, 0.08);
-  --primary: #111113;
-  --primary-foreground: #ffffff;
-  --accent: #6366f1;
-  --accent-foreground: #ffffff;
-  --success: #16a34a;
-  --danger: #e11d48;
-  --warning: #d97706;
-  --ring: var(--accent);
-  --glass: rgba(255, 255, 255, 0.85);
+  --muted: #eceef1;
+  --muted-foreground: #5c6470;
+  --border: rgba(18, 20, 24, 0.12);
+  --border-strong: rgba(18, 20, 24, 0.2);
+
+  /* Saffron drives every primary action. */
+  --primary: #f0870d;
+  --primary-foreground: #1a1204;
+  --primary-soft: rgba(240, 135, 13, 0.12);
+
+  /* Link/secondary blue. Deliberately not indigo. */
+  --info: #1e63d0;
+
+  /* Green means money saved or stock available. Nothing else. */
+  --savings: #157f3d;
+  --savings-foreground: #ffffff;
+
+  --danger: #c8102e;
+  --warning: #b45309;
+  --ring: var(--primary);
+
+  /* Product photos sit on a light plate in both themes so they never mush. */
+  --plate: #ffffff;
+
+  --header: #ffffff;
 }
 
 .dark {
-  --background: #07070a;
-  --surface: #09090d;
-  --foreground: #f4f4f5;
-  --card: #101018;
-  --muted: #17171f;
-  --muted-foreground: #9aa0ae;
-  --border: rgba(255, 255, 255, 0.08);
-  --primary: #fafafa;
-  --primary-foreground: #0a0a0a;
-  --accent: #6366f1;
-  --accent-foreground: #ffffff;
-  --success: #34d399;
-  --danger: #fb7185;
+  --background: #0b0b0c;
+  --surface: #101012;
+  --foreground: #f2f2f3;
+  --card: #161618;
+  --muted: #1f1f23;
+  --muted-foreground: #a0a0aa;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  --primary: #f5a524;
+  --primary-foreground: #1a1204;
+  --primary-soft: rgba(245, 165, 36, 0.14);
+
+  --info: #5aa2ff;
+
+  --savings: #22c55e;
+  --savings-foreground: #06230f;
+
+  --danger: #f2545b;
   --warning: #fbbf24;
-  --glass: rgba(14, 14, 20, 0.88);
+
+  /* Kept light on purpose: dark product photos on dark cards turn to mush. */
+  --plate: #f4f4f5;
+
+  --header: #131316;
 }
 
 @theme inline {
@@ -52,13 +79,17 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-success: var(--success);
+  --color-primary-soft: var(--primary-soft);
+  --color-info: var(--info);
+  --color-savings: var(--savings);
+  --color-savings-foreground: var(--savings-foreground);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
+  --color-plate: var(--plate);
+  --color-header: var(--header);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
@@ -81,7 +112,7 @@
     font-family: var(--font-sans);
   }
   ::selection {
-    background: color-mix(in oklab, var(--accent) 30%, transparent);
+    background: color-mix(in oklab, var(--primary) 32%, transparent);
   }
   :focus-visible {
     outline: 2px solid var(--ring);
@@ -90,99 +121,103 @@
 }
 
 /* ----------------------------------------------------------------------------
-   Reusable components
+   Components
 ---------------------------------------------------------------------------- */
 @layer components {
+  /* Squared-off, not pill. Pills read as marketing; marketplaces are dense
+     with controls and need tighter radii. */
   .btn {
-    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full font-medium transition-all duration-300 ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap select-none;
+    @apply relative inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-[background-color,color,box-shadow,transform,filter] duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap select-none;
   }
-  .btn-sm { @apply px-4 py-2 text-sm; }
-  .btn-md { @apply px-5 py-2.5 text-sm; }
-  .btn-lg { @apply px-7 py-3.5 text-base; }
+  .btn-sm { @apply px-3.5 py-2 text-[13px]; }
+  .btn-md { @apply px-4 py-2.5 text-sm; }
+  .btn-lg { @apply px-6 py-3 text-[15px]; }
 
-  .btn-primary { @apply bg-primary text-primary-foreground hover:opacity-90 shadow-sm; }
-  .btn-accent { @apply bg-accent text-accent-foreground shadow-[0_8px_30px_-6px] shadow-accent/50 hover:shadow-accent/70; }
-  .btn-secondary { @apply bg-muted text-foreground hover:brightness-110; }
-  .btn-outline { @apply border bg-card/40 text-foreground backdrop-blur hover:bg-muted; }
+  .btn-primary {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    @apply shadow-sm hover:brightness-105;
+  }
+  .btn-buy {
+    background-color: var(--savings);
+    color: var(--savings-foreground);
+    @apply shadow-sm hover:brightness-110;
+  }
+  .btn-secondary {
+    border: 1px solid var(--border-strong);
+    @apply bg-card text-foreground hover:bg-muted;
+  }
   .btn-ghost { @apply text-foreground hover:bg-muted; }
 
-  .card { @apply rounded-2xl border bg-card; }
-  .card-hover { @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:border-accent/30; }
+  .card { @apply rounded-xl border bg-card; }
 
-  .glass {
-    background-color: var(--glass);
-    backdrop-filter: blur(16px) saturate(160%);
-    -webkit-backdrop-filter: blur(16px) saturate(160%);
-  }
+  /* Product photography plate. Always light so dark cut-outs read. */
+  .plate { background-color: var(--plate); }
 
   .input {
-    @apply w-full rounded-xl border bg-card/60 px-4 py-2.5 text-foreground placeholder:text-muted-foreground backdrop-blur transition focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/50;
+    @apply w-full rounded-lg border bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-primary/40;
+  }
+  .input:focus { border-color: var(--primary); }
+
+  /* The compact "4.3 ★" block Indian marketplaces use. */
+  .rating-chip {
+    background-color: var(--savings);
+    color: var(--savings-foreground);
+    @apply inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-bold leading-none;
   }
 
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border bg-card/50 px-4 py-2 text-sm font-medium text-foreground backdrop-blur transition-all duration-200 hover:border-accent/40 cursor-pointer whitespace-nowrap;
+    @apply inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-[13px] font-medium text-foreground transition-colors duration-150 hover:bg-muted cursor-pointer whitespace-nowrap;
   }
-  .chip-active { @apply bg-primary text-primary-foreground border-primary hover:border-primary; }
+  .chip:hover { border-color: var(--border-strong); }
+  .chip-active {
+    background-color: var(--primary-soft);
+    border-color: var(--primary);
+    @apply text-foreground;
+  }
 
-  .skeleton { @apply relative overflow-hidden rounded-lg bg-muted; }
+  /* Prices must never jitter between grid rows. */
+  .price {
+    @apply font-bold tracking-tight;
+    font-variant-numeric: tabular-nums;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .skeleton { @apply relative overflow-hidden rounded bg-muted; }
   .skeleton::after {
     content: "";
     position: absolute;
     inset: 0;
     transform: translateX(-100%);
-    background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--foreground) 8%, transparent), transparent);
-    animation: shimmer 1.6s infinite;
+    background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--foreground) 7%, transparent), transparent);
+    animation: shimmer 1.4s infinite;
   }
+
+  .rail {
+    @apply flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth sm:gap-4;
+  }
+  .rail > * { @apply snap-start shrink-0; }
+
+  .section-title { @apply text-lg font-bold tracking-tight text-foreground sm:text-xl; }
 }
 
 /* ----------------------------------------------------------------------------
-   Utilities — gradients, grid, noise, glow
+   Utilities
 ---------------------------------------------------------------------------- */
-@utility text-gradient {
-  background: linear-gradient(110deg, #818cf8 0%, #c084fc 45%, #22d3ee 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+@utility no-scrollbar {
+  &::-webkit-scrollbar { display: none; }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-@utility bg-grid {
-  background-image:
-    linear-gradient(to right, color-mix(in oklab, var(--foreground) 6%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklab, var(--foreground) 6%, transparent) 1px, transparent 1px);
-  background-size: 48px 48px;
-}
-
-@utility bg-noise {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-@utility glow-accent {
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 30%, transparent),
-    0 18px 60px -16px color-mix(in oklab, var(--accent) 55%, transparent);
-}
-
-/* ----------------------------------------------------------------------------
-   Keyframes & animation helpers
----------------------------------------------------------------------------- */
 @keyframes shimmer { 100% { transform: translateX(100%); } }
-@keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradientShift 8s ease infinite;
-}
-@keyframes floaty {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-.animate-floaty { animation: floaty 6s ease-in-out infinite; }
-.marquee { animation: marquee 40s linear infinite; }
-@keyframes marquee { to { transform: translateX(-50%); } }
 
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+@keyframes pop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.animate-pop { animation: pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1); }
 
 /* Accessibility: honour reduced-motion globally */
 @media (prefers-reduced-motion: reduce) {

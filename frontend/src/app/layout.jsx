@@ -1,7 +1,6 @@
 import "./globals.css";
 import { Providers } from "../components/Providers";
 import LayoutWrapper from "../components/LayoutWrapper";
-import AuroraBackground from "../components/motion/AuroraBackground";
 import { Inter } from 'next/font/google';
 
 const inter = Inter({
@@ -11,11 +10,12 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "QuickKart — Premium AI Commerce",
-  description: "A premium, region-aware commerce platform with personalized recommendations and trending products.",
+  title: "QuickKart — Shop the best deals online",
+  description:
+    "Electronics, fashion, home and more at prices tuned to your region. Free delivery, easy returns.",
 };
 
-// Default to the premium dark theme; honour an explicit light preference.
+// Dark is the default; an explicit light preference wins.
 const themeScript = `(function(){try{if(localStorage.getItem('theme')!=='light'){document.documentElement.classList.add('dark')}}catch(e){document.documentElement.classList.add('dark')}})();`;
 
 export default function RootLayout({ children }) {
@@ -25,7 +25,6 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        <AuroraBackground />
         <Providers>
           <LayoutWrapper>{children}</LayoutWrapper>
         </Providers>

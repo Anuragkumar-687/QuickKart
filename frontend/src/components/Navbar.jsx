@@ -3,13 +3,18 @@
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { ShoppingCart, Menu, X, User, LogOut, Heart, Search, ShoppingBag } from 'lucide-react';
-import { useState } from 'react';
+import {
+    ShoppingCart, Menu, X, LogOut, Heart, Search, MapPin,
+    ChevronDown, Package, LayoutDashboard, CornerDownLeft,
+} from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import api from '../lib/api';
+import { formatPrice } from '../lib/format';
 import ThemeToggle from './ThemeToggle';
-import Magnetic from './motion/Magnetic';
 
 function CountBadge({ n }) {
     return (
@@ -18,19 +23,282 @@ function CountBadge({ n }) {
             initial={{ scale: 0.4 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 500, damping: 14 }}
-            className="absolute -right-1 -top-1 grid h-4 min-w-[1rem] place-items-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-foreground"
+            style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
+            className="absolute -right-1.5 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 text-[10px] font-bold tabular-nums"
         >
-            {n}
+            {n > 99 ? '99+' : n}
         </motion.span>
     );
 }
 
-function IconLink({ href, label, count, children }) {
+function IconLink({ href, label, count, children, targetAttr }) {
     return (
-        <Link href={href} aria-label={label} className="relative grid h-9 w-9 place-items-center rounded-full text-foreground transition-colors hover:bg-muted">
+        <Link
+            href={href}
+            aria-label={count > 0 ? `${label} (${count} items)` : label}
+            className="relative grid h-10 w-10 place-items-center rounded-lg text-foreground transition-colors hover:bg-muted"
+            {...(targetAttr ? { 'data-cart-target': '' } : {})}
+        >
             {children}
             {count > 0 && <CountBadge n={count} />}
         </Link>
+    );
+}
+
+/** Debounced product suggestions under the search field. */
+function useSuggestions(query) {
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const term = query.trim();
+        if (term.length < 2) {
+            setItems([]);
+            setLoading(false);
+            return;
+        }
+        let cancelled = false;
+        setLoading(true);
+        const t = setTimeout(() => {
+            api.get(`/products?search=${encodeURIComponent(term)}&limit=6`)
+                .then((r) => {
+                    if (!cancelled) setItems(r.data?.data || []);
+                })
+                .catch(() => {
+                    if (!cancelled) setItems([]);
+                })
+                .finally(() => {
+                    if (!cancelled) setLoading(false);
+                });
+        }, 250);
+        return () => {
+            cancelled = true;
+            clearTimeout(t);
+        };
+    }, [query]);
+
+    return { items, loading };
+}
+
+function SearchField({ onNavigate, autoFocus = false }) {
+    const [q, setQ] = useState('');
+    const [open, setOpen] = useState(false);
+    const [active, setActive] = useState(-1);
+    const boxRef = useRef(null);
+    const router = useRouter();
+    const { items, loading } = useSuggestions(q);
+
+    useEffect(() => {
+        const onDocClick = (e) => {
+            if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener('mousedown', onDocClick);
+        return () => document.removeEventListener('mousedown', onDocClick);
+    }, []);
+
+    useEffect(() => setActive(-1), [items]);
+
+    const go = (href) => {
+        setOpen(false);
+        setQ('');
+        onNavigate?.();
+        router.push(href);
+    };
+
+    const submit = (e) => {
+        e.preventDefault();
+        const term = q.trim();
+        go(term ? `/products?search=${encodeURIComponent(term)}` : '/products');
+    };
+
+    const onKeyDown = (e) => {
+        if (!open || items.length === 0) return;
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setActive((i) => (i + 1) % items.length);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setActive((i) => (i <= 0 ? items.length - 1 : i - 1));
+        } else if (e.key === 'Enter' && active >= 0) {
+            e.preventDefault();
+            const p = items[active];
+            go(`/products/${p.id || p._id}`);
+        } else if (e.key === 'Escape') {
+            setOpen(false);
+        }
+    };
+
+    return (
+        <div ref={boxRef} className="relative w-full">
+            <form onSubmit={submit} role="search">
+                <div className="relative">
+                    <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" />
+                    <input
+                        value={q}
+                        autoFocus={autoFocus}
+                        onChange={(e) => {
+                            setQ(e.target.value);
+                            setOpen(true);
+                        }}
+                        onFocus={() => setOpen(true)}
+                        onKeyDown={onKeyDown}
+                        placeholder="Search for products, brands and more"
+                        aria-label="Search products"
+                        aria-expanded={open && items.length > 0}
+                        className="h-11 w-full rounded-lg border bg-card pl-11 pr-24 text-sm text-foreground placeholder:text-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                    <button
+                        type="submit"
+                        className="btn btn-primary absolute right-1.5 top-1/2 h-8 -translate-y-1/2 px-3.5 text-[13px]"
+                    >
+                        Search
+                    </button>
+                </div>
+            </form>
+
+            <AnimatePresence>
+                {open && q.trim().length >= 2 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute inset-x-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-xl border bg-card shadow-2xl shadow-black/30"
+                    >
+                        {loading && items.length === 0 ? (
+                            <div className="space-y-2 p-3">
+                                {[0, 1, 2].map((i) => (
+                                    <div key={i} className="flex items-center gap-3">
+                                        <div className="skeleton h-10 w-10 rounded" />
+                                        <div className="flex-1 space-y-1.5">
+                                            <div className="skeleton h-3 w-2/3 rounded" />
+                                            <div className="skeleton h-3 w-1/4 rounded" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : items.length === 0 ? (
+                            <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+                                No matches for “{q.trim()}”
+                            </p>
+                        ) : (
+                            <ul role="listbox">
+                                {items.map((p, i) => {
+                                    const id = p.id || p._id;
+                                    return (
+                                        <li key={id}>
+                                            <button
+                                                type="button"
+                                                onMouseEnter={() => setActive(i)}
+                                                onClick={() => go(`/products/${id}`)}
+                                                className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+                                                    active === i ? 'bg-muted' : 'hover:bg-muted'
+                                                }`}
+                                            >
+                                                <span className="plate relative h-10 w-10 shrink-0 overflow-hidden rounded">
+                                                    <Image src={p.image} alt="" fill sizes="40px" className="object-contain p-1" />
+                                                </span>
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="block truncate text-sm text-foreground">{p.name}</span>
+                                                    <span className="block truncate text-xs text-muted-foreground">{p.category}</span>
+                                                </span>
+                                                <span className="price shrink-0 text-sm">{formatPrice(p.price)}</span>
+                                            </button>
+                                        </li>
+                                    );
+                                })}
+                                <li>
+                                    <button
+                                        type="button"
+                                        onClick={submit}
+                                        className="flex w-full items-center justify-center gap-2 border-t px-4 py-2.5 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted"
+                                    >
+                                        See all results for “{q.trim()}” <CornerDownLeft className="h-3.5 w-3.5" />
+                                    </button>
+                                </li>
+                            </ul>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+function AccountMenu({ session }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const onDocClick = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener('mousedown', onDocClick);
+        return () => document.removeEventListener('mousedown', onDocClick);
+    }, []);
+
+    if (!session) {
+        return (
+            <div className="hidden items-center gap-2 md:flex">
+                <Link href="/login" className="btn btn-ghost btn-sm">Sign in</Link>
+                <Link href="/register" className="btn btn-primary btn-sm">Sign up</Link>
+            </div>
+        );
+    }
+
+    return (
+        <div ref={ref} className="relative hidden md:block">
+            <button
+                onClick={() => setOpen((o) => !o)}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-muted"
+                aria-haspopup="menu"
+                aria-expanded={open}
+            >
+                <span
+                    style={{ backgroundColor: 'var(--primary-soft)', color: 'var(--primary)' }}
+                    className="grid h-7 w-7 place-items-center rounded-full text-xs font-bold uppercase"
+                >
+                    {session.user?.name?.charAt(0) || 'U'}
+                </span>
+                <span className="max-w-[6rem] truncate">{session.user?.name}</span>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+                {open && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-[calc(100%+8px)] z-50 w-52 overflow-hidden rounded-xl border bg-card p-1.5 shadow-2xl shadow-black/30"
+                        role="menu"
+                    >
+                        <div className="border-b px-3 pb-2 pt-1.5">
+                            <p className="truncate text-sm font-semibold">{session.user?.name}</p>
+                            <p className="truncate text-xs text-muted-foreground">{session.user?.email}</p>
+                        </div>
+                        <Link href="/orders" onClick={() => setOpen(false)} className="mt-1 flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted">
+                            <Package className="h-4 w-4 text-muted-foreground" /> My orders
+                        </Link>
+                        <Link href="/wishlist" onClick={() => setOpen(false)} className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted">
+                            <Heart className="h-4 w-4 text-muted-foreground" /> Wishlist
+                        </Link>
+                        {session.user?.role === 'admin' && (
+                            <Link href="/admin" onClick={() => setOpen(false)} className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted">
+                                <LayoutDashboard className="h-4 w-4 text-muted-foreground" /> Admin
+                            </Link>
+                        )}
+                        <button
+                            onClick={() => { setOpen(false); signOut(); }}
+                            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
+                        >
+                            <LogOut className="h-4 w-4 text-muted-foreground" /> Sign out
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
     );
 }
 
@@ -39,129 +307,131 @@ export default function Navbar() {
     const { cartCount } = useCart();
     const { count: wishlistCount } = useWishlist();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [q, setQ] = useState('');
-    const router = useRouter();
+    const [scrolled, setScrolled] = useState(false);
     const pathname = usePathname();
 
-    // The products page has its own live search toolbar — avoid a duplicate.
-    const showSearch = pathname !== '/products';
+    useEffect(() => {
+        const onScroll = () => setScrolled(window.scrollY > 4);
+        onScroll();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
 
-    const submitSearch = (e) => {
-        e.preventDefault();
-        const term = q.trim();
-        router.push(term ? `/products?search=${encodeURIComponent(term)}` : '/products');
-        setIsMenuOpen(false);
-    };
+    useEffect(() => setIsMenuOpen(false), [pathname]);
+
+    const region = session?.user?.region;
+    const city = session?.user?.city;
+    const deliverTo = city || (region ? `${region} India` : null);
 
     return (
-        <motion.header
-            initial={{ y: -120, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-x-0 top-0 z-50"
+        <header
+            style={{ backgroundColor: 'var(--header)' }}
+            className={`sticky top-0 z-50 border-b transition-shadow duration-200 ${
+                scrolled ? 'shadow-lg shadow-black/20' : ''
+            }`}
         >
-            <div className="mx-auto mt-3 max-w-7xl px-4">
-                <nav className="glass flex h-14 items-center justify-between gap-3 rounded-2xl border px-3 shadow-xl shadow-black/10 sm:px-4">
-                    <Link href="/" className="flex shrink-0 items-center gap-2">
-                        <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary text-primary-foreground">
-                            <ShoppingBag className="h-5 w-5" />
-                        </span>
-                        <span className="text-lg font-bold tracking-tight">QuickKart</span>
-                    </Link>
-
-                    {showSearch ? (
-                        <form onSubmit={submitSearch} className="hidden max-w-md flex-1 md:block">
-                            <div className="relative">
-                                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                <input
-                                    value={q}
-                                    onChange={(e) => setQ(e.target.value)}
-                                    placeholder="Search products..."
-                                    className="w-full rounded-full border bg-card/60 py-2 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground transition focus:bg-card focus:outline-none focus:ring-2 focus:ring-accent/40"
-                                />
-                            </div>
-                        </form>
-                    ) : (
-                        <div className="hidden flex-1 md:block" />
-                    )}
-
-                    <div className="flex items-center gap-0.5 sm:gap-1">
-                        <Link href="/products" className="hidden rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground lg:block">
-                            Products
-                        </Link>
-                        {session?.user?.role === 'admin' && (
-                            <Link href="/admin" className="hidden rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground lg:block">
-                                Admin
-                            </Link>
-                        )}
-
-                        <ThemeToggle />
-                        {session && <IconLink href="/wishlist" label="Wishlist" count={wishlistCount}><Heart className="h-5 w-5" /></IconLink>}
-                        <IconLink href="/cart" label="Cart" count={cartCount}><ShoppingCart className="h-5 w-5" /></IconLink>
-
-                        {session ? (
-                            <div className="hidden items-center gap-2 pl-1 md:flex">
-                                <Link href="/orders" className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Orders</Link>
-                                <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-sm font-medium">
-                                    <User className="h-4 w-4 text-muted-foreground" />
-                                    <span className="max-w-[7rem] truncate">{session.user?.name}</span>
-                                </div>
-                                <button onClick={() => signOut()} aria-label="Logout" className="grid h-9 w-9 place-items-center rounded-full text-foreground transition-colors hover:bg-muted">
-                                    <LogOut className="h-5 w-5" />
-                                </button>
-                            </div>
+            {/* Utility row — the thin strip real marketplaces use for context. */}
+            <div className="hidden border-b lg:block">
+                <div className="mx-auto flex h-9 max-w-[1400px] items-center justify-between px-6 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {deliverTo ? (
+                            <span>Deliver to <span className="font-semibold text-foreground">{deliverTo}</span></span>
                         ) : (
-                            <div className="hidden items-center gap-2 pl-1 md:flex">
-                                <Link href="/login" className="btn btn-ghost btn-sm">Login</Link>
-                                <Magnetic>
-                                    <Link href="/register" className="btn btn-accent btn-sm">Register</Link>
-                                </Magnetic>
-                            </div>
+                            <Link href="/login" className="hover:text-foreground">Sign in to set your delivery region</Link>
                         )}
-
-                        <button className="grid h-9 w-9 place-items-center rounded-full text-foreground hover:bg-muted md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Menu">
-                            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                        </button>
                     </div>
-                </nav>
-
-                {/* Mobile dropdown */}
-                <AnimatePresence>
-                    {isMenuOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10, scale: 0.98 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.98 }}
-                            transition={{ duration: 0.2 }}
-                            className="glass mt-2 rounded-2xl border p-3 shadow-xl md:hidden"
-                        >
-                            <form onSubmit={submitSearch} className="mb-2">
-                                <div className="relative">
-                                    <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                    <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products..." className="w-full rounded-full border bg-card/60 py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/40" />
-                                </div>
-                            </form>
-                            <div className="space-y-1">
-                                <Link href="/products" onClick={() => setIsMenuOpen(false)} className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">Products</Link>
-                                {session?.user?.role === 'admin' && <Link href="/admin" onClick={() => setIsMenuOpen(false)} className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">Admin Dashboard</Link>}
-                                {session && <Link href="/wishlist" onClick={() => setIsMenuOpen(false)} className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">Wishlist{wishlistCount > 0 ? ` (${wishlistCount})` : ''}</Link>}
-                                <Link href="/cart" onClick={() => setIsMenuOpen(false)} className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">Cart{cartCount > 0 ? ` (${cartCount})` : ''}</Link>
-                                {session ? (
-                                    <>
-                                        <Link href="/orders" onClick={() => setIsMenuOpen(false)} className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">My Orders</Link>
-                                        <button onClick={() => { signOut(); setIsMenuOpen(false); }} className="btn btn-secondary btn-md mt-1 w-full"><LogOut className="h-4 w-4" /> Logout</button>
-                                    </>
-                                ) : (
-                                    <div className="flex gap-2 pt-1">
-                                        <Link href="/login" onClick={() => setIsMenuOpen(false)} className="btn btn-outline btn-md flex-1">Login</Link>
-                                        <Link href="/register" onClick={() => setIsMenuOpen(false)} className="btn btn-accent btn-md flex-1">Register</Link>
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                    <nav className="flex items-center gap-5">
+                        <Link href="/products" className="transition-colors hover:text-foreground">All products</Link>
+                        <Link href="/orders" className="transition-colors hover:text-foreground">Track order</Link>
+                        {session?.user?.role === 'admin' && (
+                            <Link href="/admin" className="transition-colors hover:text-foreground">Admin</Link>
+                        )}
+                    </nav>
+                </div>
             </div>
-        </motion.header>
+
+            {/* Main row */}
+            <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-3 px-4 sm:px-6">
+                <Link href="/" className="flex shrink-0 items-center gap-2">
+                    <span
+                        style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
+                        className="grid h-9 w-9 place-items-center rounded-lg text-lg font-black"
+                    >
+                        Q
+                    </span>
+                    <span className="hidden text-[19px] font-extrabold tracking-tight sm:block">
+                        Quick<span style={{ color: 'var(--primary)' }}>Kart</span>
+                    </span>
+                </Link>
+
+                <div className="mx-auto hidden w-full max-w-2xl md:block">
+                    <SearchField />
+                </div>
+
+                <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
+                    <ThemeToggle />
+                    {session && (
+                        <IconLink href="/wishlist" label="Wishlist" count={wishlistCount}>
+                            <Heart className="h-[21px] w-[21px]" />
+                        </IconLink>
+                    )}
+                    <IconLink href="/cart" label="Cart" count={cartCount} targetAttr>
+                        <ShoppingCart className="h-[21px] w-[21px]" />
+                    </IconLink>
+                    <AccountMenu session={session} />
+
+                    <button
+                        className="grid h-10 w-10 place-items-center rounded-lg text-foreground hover:bg-muted md:hidden"
+                        onClick={() => setIsMenuOpen((o) => !o)}
+                        aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+                        aria-expanded={isMenuOpen}
+                    >
+                        {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                    </button>
+                </div>
+            </div>
+
+            {/* Mobile search always visible — it's the primary action. */}
+            <div className="border-t px-4 py-2.5 md:hidden">
+                <SearchField onNavigate={() => setIsMenuOpen(false)} />
+            </div>
+
+            <AnimatePresence>
+                {isMenuOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden border-t md:hidden"
+                    >
+                        <div className="space-y-1 p-3">
+                            {deliverTo && (
+                                <p className="flex items-center gap-1.5 px-3 pb-1 text-xs text-muted-foreground">
+                                    <MapPin className="h-3.5 w-3.5" /> Deliver to{' '}
+                                    <span className="font-semibold text-foreground">{deliverTo}</span>
+                                </p>
+                            )}
+                            <Link href="/products" className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">All products</Link>
+                            {session && <Link href="/orders" className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">My orders</Link>}
+                            {session && <Link href="/wishlist" className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">Wishlist{wishlistCount > 0 ? ` (${wishlistCount})` : ''}</Link>}
+                            <Link href="/cart" className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">Cart{cartCount > 0 ? ` (${cartCount})` : ''}</Link>
+                            {session?.user?.role === 'admin' && <Link href="/admin" className="block rounded-lg px-3 py-2.5 font-medium hover:bg-muted">Admin dashboard</Link>}
+                            {session ? (
+                                <button onClick={() => signOut()} className="btn btn-secondary btn-md mt-1 w-full">
+                                    <LogOut className="h-4 w-4" /> Sign out
+                                </button>
+                            ) : (
+                                <div className="flex gap-2 pt-1">
+                                    <Link href="/login" className="btn btn-secondary btn-md flex-1">Sign in</Link>
+                                    <Link href="/register" className="btn btn-primary btn-md flex-1">Sign up</Link>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </header>
     );
 }
