@@ -13,7 +13,11 @@ export function CartProvider({ children }) {
     const itemsOf = (data) =>
         Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
 
-    const syncFrom = (cart) => setCartCount(itemsOf(cart).length);
+    // Total units, not line items — this has to agree with the cart page,
+    // which has always summed quantities.
+    const unitsOf = (data) => itemsOf(data).reduce((n, i) => n + (i.quantity || 1), 0);
+
+    const syncFrom = (cart) => setCartCount(unitsOf(cart));
 
     const fetchCartCount = useCallback(async () => {
         if (!session) {
@@ -22,7 +26,7 @@ export function CartProvider({ children }) {
         }
         try {
             const res = await api.get('/cart');
-            setCartCount(itemsOf(res.data).length);
+            setCartCount(unitsOf(res.data));
         } catch (error) {
             console.error('Failed to fetch cart count:', error?.response?.data || error.message);
             setCartCount(0);

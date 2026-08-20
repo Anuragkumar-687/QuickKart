@@ -45,6 +45,8 @@ export const authOptions = {
                 token.role = user.role;
                 token.region = user.region;
                 token.state = user.state;
+                token.city = user.city;
+                token.pincode = user.pincode;
                 token.accessToken = user.accessToken;
             }
             return token;
@@ -55,6 +57,8 @@ export const authOptions = {
                 session.user.role = token.role;
                 session.user.region = token.region;
                 session.user.state = token.state;
+                session.user.city = token.city;
+                session.user.pincode = token.pincode;
                 session.accessToken = token.accessToken;
             }
             return session;

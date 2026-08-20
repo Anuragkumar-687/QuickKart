@@ -1,12 +1,13 @@
 'use client';
 
 import { Suspense, useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import api from '../../lib/api';
 import ProductCard from '../../components/ProductCard';
 import ProductCardSkeleton from '../../components/ProductCardSkeleton';
-import { Search, ChevronLeft, ChevronRight, X, SlidersHorizontal, Star } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, X, SlidersHorizontal } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { formatPrice } from '../../lib/format';
 
 const SORT_OPTIONS = [
     { label: 'Newest', value: 'newest' },
@@ -19,7 +20,7 @@ const LIMIT = 20;
 
 function SkeletonGrid({ count = 10 }) {
     return (
-        <div className="grid grid-cols-2 gap-px bg-[var(--border)] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-[var(--border)] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {Array.from({ length: count }).map((_, i) => (
                 <div key={i} className="bg-card p-2">
                     <ProductCardSkeleton />
@@ -29,16 +30,78 @@ function SkeletonGrid({ count = 10 }) {
     );
 }
 
-/** Filter controls, shared between the desktop rail and the mobile sheet. */
-function Filters({ categories, category, setCategory, minRating, setMinRating }) {
+/**
+ * Filter controls, shared between the desktop rail and the mobile sheet.
+ *
+ * Price filters server-side (the API takes minPrice/maxPrice), so the result
+ * count and pagination stay truthful. There is deliberately no rating filter:
+ * the API has no rating threshold, and filtering a page client-side after the
+ * server has already paginated makes both the "showing X-Y of Z" line and the
+ * page buttons lie about what is there.
+ */
+function Filters({
+    categories,
+    category,
+    onCategory,
+    priceDraft,
+    setPriceDraft,
+    onApplyPrice,
+    onClearPrice,
+    priceActive,
+}) {
+    const submit = (e) => {
+        e.preventDefault();
+        onApplyPrice();
+    };
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             <div>
+                <div className="mb-2.5 flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Price</h3>
+                    {priceActive && (
+                        <button
+                            onClick={onClearPrice}
+                            className="text-[11px] font-semibold text-[var(--primary)] hover:underline"
+                        >
+                            Clear
+                        </button>
+                    )}
+                </div>
+                <form onSubmit={submit} className="flex items-center gap-1.5">
+                    <input
+                        inputMode="numeric"
+                        aria-label="Minimum price"
+                        placeholder="Min"
+                        value={priceDraft.min}
+                        onChange={(e) =>
+                            setPriceDraft((p) => ({ ...p, min: e.target.value.replace(/\D/g, '').slice(0, 7) }))
+                        }
+                        className="input num w-full px-2 py-1.5 text-[13px]"
+                    />
+                    <span className="shrink-0 text-xs text-muted-foreground">to</span>
+                    <input
+                        inputMode="numeric"
+                        aria-label="Maximum price"
+                        placeholder="Max"
+                        value={priceDraft.max}
+                        onChange={(e) =>
+                            setPriceDraft((p) => ({ ...p, max: e.target.value.replace(/\D/g, '').slice(0, 7) }))
+                        }
+                        className="input num w-full px-2 py-1.5 text-[13px]"
+                    />
+                    <button type="submit" className="btn btn-secondary btn-sm shrink-0 px-2.5">
+                        Go
+                    </button>
+                </form>
+            </div>
+
+            <div className="border-t pt-5">
                 <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">Category</h3>
-                <ul className="space-y-0.5">
+                <ul className="no-scrollbar max-h-[19rem] space-y-0.5 overflow-y-auto">
                     <li>
                         <button
-                            onClick={() => setCategory('All')}
+                            onClick={() => onCategory('All')}
                             className={`w-full rounded-lg px-2.5 py-1.5 text-left text-[13px] transition-colors ${
                                 category === 'All'
                                     ? 'bg-[var(--primary-soft)] font-semibold text-foreground'
@@ -51,7 +114,7 @@ function Filters({ categories, category, setCategory, minRating, setMinRating })
                     {categories.map((c) => (
                         <li key={c}>
                             <button
-                                onClick={() => setCategory(c)}
+                                onClick={() => onCategory(c)}
                                 className={`w-full truncate rounded-lg px-2.5 py-1.5 text-left text-[13px] capitalize transition-colors ${
                                     category === c
                                         ? 'bg-[var(--primary-soft)] font-semibold text-foreground'
@@ -64,53 +127,62 @@ function Filters({ categories, category, setCategory, minRating, setMinRating })
                     ))}
                 </ul>
             </div>
-
-            <div>
-                <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Customer rating
-                </h3>
-                <div className="space-y-0.5">
-                    {[4, 3, 2].map((r) => (
-                        <button
-                            key={r}
-                            onClick={() => setMinRating(minRating === r ? 0 : r)}
-                            className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition-colors ${
-                                minRating === r
-                                    ? 'bg-[var(--primary-soft)] font-semibold text-foreground'
-                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                            }`}
-                        >
-                            <span className="rating-chip">
-                                <span className="num">{r}</span>
-                                <Star className="h-2.5 w-2.5 fill-current" />
-                            </span>
-                            &amp; above
-                        </button>
-                    ))}
-                </div>
-            </div>
         </div>
     );
 }
 
 function ProductsContent() {
     const sp = useSearchParams();
-    const initialSort = SORT_OPTIONS.find((o) => o.value === sp.get('sort'))?.value || 'newest';
+    const router = useRouter();
+    const pathname = usePathname();
     const reduced = useReducedMotion();
+
+    // The URL is the single source of truth. Without this, a search typed into
+    // the navbar while already on /products changed the address bar and
+    // nothing else, because state was only ever seeded on first mount.
+    const search = sp.get('search') || '';
+    const category = sp.get('category') || 'All';
+    const sort = SORT_OPTIONS.find((o) => o.value === sp.get('sort'))?.value || 'newest';
+    const minPrice = sp.get('minPrice') || '';
+    const maxPrice = sp.get('maxPrice') || '';
+    const page = Math.max(1, Number.parseInt(sp.get('page') || '1', 10) || 1);
 
     const [products, setProducts] = useState([]);
     const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1, hasNext: false });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-
     const [categories, setCategories] = useState([]);
-    const [searchInput, setSearchInput] = useState(sp.get('search') || '');
-    const [search, setSearch] = useState(sp.get('search') || '');
-    const [category, setCategory] = useState(sp.get('category') || 'All');
-    const [sort, setSort] = useState(initialSort);
-    const [minRating, setMinRating] = useState(0);
-    const [page, setPage] = useState(1);
     const [sheetOpen, setSheetOpen] = useState(false);
+
+    const [searchInput, setSearchInput] = useState(search);
+    const [priceDraft, setPriceDraft] = useState({ min: minPrice, max: maxPrice });
+
+    const setParams = useCallback(
+        (patch, { keepPage = false } = {}) => {
+            const next = new URLSearchParams(sp.toString());
+            for (const [k, v] of Object.entries(patch)) {
+                if (v === '' || v == null || v === 'All') next.delete(k);
+                else next.set(k, String(v));
+            }
+            if (!keepPage) next.delete('page');
+            const qs = next.toString();
+            router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+        },
+        [sp, pathname, router],
+    );
+
+    // Mirror external URL changes (navbar search, back button) into the inputs.
+    const [lastUrlSearch, setLastUrlSearch] = useState(search);
+    if (search !== lastUrlSearch) {
+        setLastUrlSearch(search);
+        setSearchInput(search);
+    }
+    const priceKey = `${minPrice}|${maxPrice}`;
+    const [lastPriceKey, setLastPriceKey] = useState(priceKey);
+    if (priceKey !== lastPriceKey) {
+        setLastPriceKey(priceKey);
+        setPriceDraft({ min: minPrice, max: maxPrice });
+    }
 
     useEffect(() => {
         api.get('/products/categories')
@@ -118,22 +190,14 @@ function ProductsContent() {
             .catch(() => setCategories([]));
     }, []);
 
+    // Debounce typing into the URL rather than into a second copy of state.
     useEffect(() => {
         const t = setTimeout(() => {
-            setSearch(searchInput.trim());
-            setPage(1);
+            const term = searchInput.trim();
+            if (term !== search) setParams({ search: term });
         }, 400);
         return () => clearTimeout(t);
-    }, [searchInput]);
-
-    // Changing a filter resets to page 1. Done during render so the fetch below
-    // never fires once for the old page and again for the new one.
-    const filterKey = `${category}|${sort}`;
-    const [lastFilterKey, setLastFilterKey] = useState(filterKey);
-    if (filterKey !== lastFilterKey) {
-        setLastFilterKey(filterKey);
-        setPage(1);
-    }
+    }, [searchInput, search, setParams]);
 
     const fetchProducts = useCallback(async () => {
         setLoading(true);
@@ -142,6 +206,8 @@ function ProductsContent() {
             const params = new URLSearchParams({ page: String(page), limit: String(LIMIT), sort });
             if (search) params.set('search', search);
             if (category && category !== 'All') params.set('category', category);
+            if (minPrice) params.set('minPrice', minPrice);
+            if (maxPrice) params.set('maxPrice', maxPrice);
             const res = await api.get(`/products?${params.toString()}`);
             setProducts(res.data.data || []);
             setMeta({
@@ -155,33 +221,64 @@ function ProductsContent() {
         } finally {
             setLoading(false);
         }
-    }, [page, search, category, sort]);
+    }, [page, search, category, sort, minPrice, maxPrice]);
 
     useEffect(() => {
         fetchProducts();
     }, [fetchProducts]);
 
-    // Rating is filtered client-side; the API has no rating threshold param, so
-    // the count line below states plainly that it applies to this page only.
-    const visible = minRating > 0 ? products.filter((p) => (p.rating || 0) >= minRating) : products;
-
     const from = meta.total === 0 ? 0 : (meta.page - 1) * LIMIT + 1;
     const to = Math.min(meta.page * LIMIT, meta.total);
 
+    const applyPrice = () => {
+        let { min, max } = priceDraft;
+        // A reversed range returns nothing and looks broken; swap it instead.
+        if (min && max && Number(min) > Number(max)) [min, max] = [max, min];
+        setParams({ minPrice: min, maxPrice: max });
+        setSheetOpen(false);
+    };
+
+    const clearPrice = () => {
+        setPriceDraft({ min: '', max: '' });
+        setParams({ minPrice: '', maxPrice: '' });
+    };
+
     const clearAll = () => {
         setSearchInput('');
-        setCategory('All');
-        setSort('newest');
-        setMinRating(0);
+        setPriceDraft({ min: '', max: '' });
+        router.replace(pathname, { scroll: false });
     };
 
-    const hasFilters = search || category !== 'All' || minRating > 0;
-    const filterProps = { categories, category, setCategory, minRating, setMinRating };
+    const priceActive = Boolean(minPrice || maxPrice);
+    const hasFilters = Boolean(search) || category !== 'All' || priceActive;
 
     const goToPage = (next) => {
-        setPage(next);
+        setParams({ page: next > 1 ? next : '' }, { keepPage: true });
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
+
+    const filterProps = {
+        categories,
+        category,
+        onCategory: (c) => {
+            setParams({ category: c });
+            setSheetOpen(false);
+        },
+        priceDraft,
+        setPriceDraft,
+        onApplyPrice: applyPrice,
+        onClearPrice: clearPrice,
+        priceActive,
+    };
+
+    const heading = search ? `Results for "${search}"` : category !== 'All' ? category : 'All products';
+
+    const priceLabel =
+        minPrice && maxPrice
+            ? `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`
+            : minPrice
+              ? `Over ${formatPrice(minPrice)}`
+              : `Under ${formatPrice(maxPrice)}`;
 
     return (
         <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-6">
@@ -205,6 +302,18 @@ function ProductsContent() {
                 </aside>
 
                 <div className="min-w-0 flex-1">
+                    <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-1">
+                        <h1 className="text-lg font-bold capitalize tracking-tight">{heading}</h1>
+                        {!loading && !error && meta.total > 0 && (
+                            <p className="text-[13px] text-muted-foreground">
+                                <span className="num font-semibold text-foreground">
+                                    {from}-{to}
+                                </span>{' '}
+                                of <span className="num font-semibold text-foreground">{meta.total}</span>
+                            </p>
+                        )}
+                    </div>
+
                     {/* Toolbar */}
                     <div className="card mb-3 p-3">
                         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -231,7 +340,7 @@ function ProductsContent() {
                                 {SORT_OPTIONS.map((o) => (
                                     <button
                                         key={o.value}
-                                        onClick={() => setSort(o.value)}
+                                        onClick={() => setParams({ sort: o.value === 'newest' ? '' : o.value })}
                                         className={`chip ${sort === o.value ? 'chip-active' : ''}`}
                                     >
                                         {o.label}
@@ -248,13 +357,13 @@ function ProductsContent() {
                                     </button>
                                 )}
                                 {category !== 'All' && (
-                                    <button onClick={() => setCategory('All')} className="chip capitalize">
+                                    <button onClick={() => setParams({ category: '' })} className="chip capitalize">
                                         {category} <X className="h-3.5 w-3.5" />
                                     </button>
                                 )}
-                                {minRating > 0 && (
-                                    <button onClick={() => setMinRating(0)} className="chip">
-                                        {minRating} star &amp; above <X className="h-3.5 w-3.5" />
+                                {priceActive && (
+                                    <button onClick={clearPrice} className="chip">
+                                        {priceLabel} <X className="h-3.5 w-3.5" />
                                     </button>
                                 )}
                                 <button
@@ -267,22 +376,6 @@ function ProductsContent() {
                         )}
                     </div>
 
-                    {!loading && !error && meta.total > 0 && (
-                        <p className="mb-3 px-1 text-[13px] text-muted-foreground">
-                            Showing{' '}
-                            <span className="num font-semibold text-foreground">
-                                {from}-{to}
-                            </span>{' '}
-                            of <span className="num font-semibold text-foreground">{meta.total}</span> products
-                            {minRating > 0 && visible.length !== products.length && (
-                                <span>
-                                    {' '}
-                                    &middot; {visible.length} on this page rated {minRating} star and above
-                                </span>
-                            )}
-                        </p>
-                    )}
-
                     {loading ? (
                         <SkeletonGrid count={10} />
                     ) : error ? (
@@ -292,27 +385,33 @@ function ProductsContent() {
                                 Retry
                             </button>
                         </div>
-                    ) : visible.length === 0 ? (
+                    ) : products.length === 0 ? (
                         <div className="card p-16 text-center">
                             <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-muted">
                                 <Search className="h-6 w-6 text-muted-foreground" />
                             </div>
-                            <h3 className="mb-1.5 text-lg font-bold">No products found</h3>
-                            <p className="mb-5 text-sm text-muted-foreground">Try adjusting your search or filters.</p>
-                            <button onClick={clearAll} className="btn btn-primary btn-md">
-                                Clear filters
-                            </button>
+                            <h2 className="mb-1.5 text-lg font-bold">No products found</h2>
+                            <p className="mb-5 text-sm text-muted-foreground">
+                                {hasFilters
+                                    ? 'Nothing matches these filters. Try widening them.'
+                                    : 'The catalogue is empty right now.'}
+                            </p>
+                            {hasFilters && (
+                                <button onClick={clearAll} className="btn btn-primary btn-md">
+                                    Clear filters
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <>
                             <motion.div
-                                key={`${search}|${category}|${sort}|${page}`}
+                                key={`${search}|${category}|${sort}|${minPrice}|${maxPrice}|${page}`}
                                 initial={reduced ? false : { opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ duration: 0.2 }}
                                 className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-[var(--border)] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
                             >
-                                {visible.map((p) => (
+                                {products.map((p) => (
                                     <div key={p.id || p._id} className="bg-card p-2">
                                         <ProductCard product={p} />
                                     </div>
@@ -322,7 +421,7 @@ function ProductsContent() {
                             {meta.totalPages > 1 && (
                                 <div className="mt-6 flex items-center justify-center gap-3">
                                     <button
-                                        onClick={() => goToPage(Math.max(1, meta.page - 1))}
+                                        onClick={() => goToPage(meta.page - 1)}
                                         disabled={meta.page <= 1}
                                         className="btn btn-secondary btn-sm"
                                     >
@@ -382,7 +481,7 @@ function ProductsContent() {
                                     Clear
                                 </button>
                                 <button onClick={() => setSheetOpen(false)} className="btn btn-primary btn-md flex-1">
-                                    Apply
+                                    Show results
                                 </button>
                             </div>
                         </motion.div>

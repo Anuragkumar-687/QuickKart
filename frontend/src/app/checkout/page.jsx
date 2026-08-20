@@ -11,6 +11,7 @@ import {
     CreditCard, Smartphone, Banknote, ShieldCheck, ArrowRight, ArrowLeft, Check, Loader2,
 } from 'lucide-react';
 import { formatPrice, formatCount } from '../../lib/format';
+import { useCart } from '../../context/CartContext';
 
 const STEPS = ['Address', 'Payment', 'Review'];
 const PAYMENTS = [
@@ -126,6 +127,7 @@ function SuccessScreen({ orderId }) {
 export default function CheckoutPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
+    const { fetchCartCount } = useCart();
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [step, setStep] = useState(0);
@@ -177,6 +179,8 @@ export default function CheckoutPage() {
         try {
             const res = await api.post('/orders');
             setOrderId(res.data?.id || '');
+            // The order emptied the cart server-side; resync the navbar badge.
+            fetchCartCount();
             setSuccess(true);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to place order. Please try again.');

@@ -11,7 +11,6 @@ import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import ProductRail from '../components/ProductRail';
 import DealHero from '../components/home/DealHero';
 import CategoryRail from '../components/home/CategoryRail';
-import DealCountdown from '../components/home/DealCountdown';
 import { useGsapScope } from '../components/motion/useGsapScroll';
 
 const emptyFeed = { data: [], loading: true };
@@ -103,7 +102,6 @@ export default function Home() {
                     loading={deals.loading}
                     icon={<Zap className="h-5 w-5 text-[var(--primary)]" />}
                     href="/products?sort=newest"
-                    accessory={<DealCountdown />}
                 />
             </div>
 

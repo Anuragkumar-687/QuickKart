@@ -203,18 +203,19 @@ export default function WebGLSlides({ images, index, onFail }) {
             pending: null,
             tween: null,
             raf: 0,
-            clock: new THREE.Clock(),
+            startTime: 0,
             inView: true,
             pageVisible: typeof document === 'undefined' || !document.hidden,
             disposed: false,
         };
         stateRef.current = state;
 
-        const render = () => {
+        const render = (now) => {
             if (state.disposed) return;
             state.raf = requestAnimationFrame(render);
             if (!state.inView || !state.pageVisible) return;
-            uniforms.uTime.value = state.clock.getElapsedTime();
+            if (!state.startTime) state.startTime = now;
+            uniforms.uTime.value = (now - state.startTime) / 1000;
             renderer.render(scene, camera);
         };
         state.raf = requestAnimationFrame(render);

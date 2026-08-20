@@ -70,7 +70,7 @@ export default function DealHero({ products = [], loading }) {
             onBlurCapture={() => setPaused(false)}
             className="relative mx-auto w-full max-w-[1400px] overflow-hidden bg-black sm:rounded-2xl"
             aria-roledescription="carousel"
-            aria-label="Featured deals"
+            aria-label="Featured products"
         >
             <div className="relative h-[420px] sm:h-[420px] lg:h-[460px]">
                 {webglEnabled ? (
@@ -111,7 +111,6 @@ export default function DealHero({ products = [], loading }) {
                                     {slide.name}
                                 </h2>
                                 <p className="mt-3 flex items-baseline gap-2 text-white/90">
-                                    <span className="text-sm">Now at</span>
                                     <span className="price text-2xl text-white">{formatPrice(slide.price)}</span>
                                 </p>
                                 <Link
@@ -129,14 +128,14 @@ export default function DealHero({ products = [], loading }) {
                     <>
                         <button
                             onClick={() => go(-1)}
-                            aria-label="Previous deal"
+                            aria-label="Previous product"
                             className="absolute left-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur transition hover:bg-black/70 sm:grid"
                         >
                             <ChevronLeft className="h-5 w-5" />
                         </button>
                         <button
                             onClick={() => go(1)}
-                            aria-label="Next deal"
+                            aria-label="Next product"
                             className="absolute right-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur transition hover:bg-black/70 sm:grid"
                         >
                             <ChevronRight className="h-5 w-5" />
@@ -147,7 +146,7 @@ export default function DealHero({ products = [], loading }) {
                                 <button
                                     key={s.id || i}
                                     onClick={() => setIndex(i)}
-                                    aria-label={`Go to deal ${i + 1}`}
+                                    aria-label={`Go to product ${i + 1}`}
                                     aria-current={i === index}
                                     className="group h-1.5 rounded-full transition-all duration-300"
                                     style={{
