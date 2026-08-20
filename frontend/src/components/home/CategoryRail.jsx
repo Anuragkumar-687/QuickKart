@@ -28,14 +28,21 @@ const iconFor = (name) => ICONS.find(([re]) => re.test(name))?.[1] || Package;
 export default function CategoryRail({ categories = [], loading }) {
     const scope = useGsapScope(
         () => {
-            gsap.from('[data-cat]', {
-                y: 16,
-                opacity: 0,
-                duration: 0.4,
-                stagger: 0.04,
-                ease: 'power2.out',
-                scrollTrigger: { trigger: '[data-cat-rail]', start: 'top 88%', once: true },
-            });
+            // fromTo + immediateRender:false so the tiles are never parked
+            // invisible if the trigger somehow doesn't fire.
+            gsap.fromTo(
+                '[data-cat]',
+                { y: 16, opacity: 0 },
+                {
+                    y: 0,
+                    opacity: 1,
+                    duration: 0.4,
+                    stagger: 0.04,
+                    ease: 'power2.out',
+                    immediateRender: false,
+                    scrollTrigger: { trigger: '[data-cat-rail]', start: 'top 95%', once: true },
+                },
+            );
         },
         [categories.length],
     );

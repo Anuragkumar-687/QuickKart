@@ -23,9 +23,12 @@ export default function DealCountdown() {
 
     // Starts null so server and client markup agree, then ticks on the client.
     useEffect(() => {
-        setT(timeToMidnight());
+        const raf = requestAnimationFrame(() => setT(timeToMidnight()));
         const id = setInterval(() => setT(timeToMidnight()), 1000);
-        return () => clearInterval(id);
+        return () => {
+            cancelAnimationFrame(raf);
+            clearInterval(id);
+        };
     }, []);
 
     if (!t) return null;

@@ -47,46 +47,43 @@ function IconLink({ href, label, count, children, targetAttr }) {
 
 /** Debounced product suggestions under the search field. */
 function useSuggestions(query) {
-    const [items, setItems] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const term = query.trim();
+    const enabled = term.length >= 2;
+    // Results are tagged with the term that produced them, so a stale response
+    // is discarded by derivation rather than by clearing state in an effect.
+    const [result, setResult] = useState({ term: '', items: [] });
 
     useEffect(() => {
-        const term = query.trim();
-        if (term.length < 2) {
-            setItems([]);
-            setLoading(false);
-            return;
-        }
+        if (!enabled) return;
         let cancelled = false;
-        setLoading(true);
         const t = setTimeout(() => {
             api.get(`/products?search=${encodeURIComponent(term)}&limit=6`)
                 .then((r) => {
-                    if (!cancelled) setItems(r.data?.data || []);
+                    if (!cancelled) setResult({ term, items: r.data?.data || [] });
                 })
                 .catch(() => {
-                    if (!cancelled) setItems([]);
-                })
-                .finally(() => {
-                    if (!cancelled) setLoading(false);
+                    if (!cancelled) setResult({ term, items: [] });
                 });
         }, 250);
         return () => {
             cancelled = true;
             clearTimeout(t);
         };
-    }, [query]);
+    }, [term, enabled]);
 
-    return { items, loading };
+    const fresh = enabled && result.term === term;
+    return { items: fresh ? result.items : [], loading: enabled && !fresh };
 }
 
 function SearchField({ onNavigate, autoFocus = false }) {
     const [q, setQ] = useState('');
     const [open, setOpen] = useState(false);
-    const [active, setActive] = useState(-1);
+    const [activeRaw, setActive] = useState(-1);
     const boxRef = useRef(null);
     const router = useRouter();
     const { items, loading } = useSuggestions(q);
+    // Derived so a shrinking result list can never leave a dangling highlight.
+    const active = activeRaw < items.length ? activeRaw : -1;
 
     useEffect(() => {
         const onDocClick = (e) => {
@@ -95,8 +92,6 @@ function SearchField({ onNavigate, autoFocus = false }) {
         document.addEventListener('mousedown', onDocClick);
         return () => document.removeEventListener('mousedown', onDocClick);
     }, []);
-
-    useEffect(() => setActive(-1), [items]);
 
     const go = (href) => {
         setOpen(false);
@@ -144,6 +139,9 @@ function SearchField({ onNavigate, autoFocus = false }) {
                         onKeyDown={onKeyDown}
                         placeholder="Search for products, brands and more"
                         aria-label="Search products"
+                        role="combobox"
+                        aria-autocomplete="list"
+                        aria-controls="nav-search-results"
                         aria-expanded={open && items.length > 0}
                         className="h-11 w-full rounded-lg border bg-card pl-11 pr-24 text-sm text-foreground placeholder:text-muted-foreground transition focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
@@ -182,7 +180,7 @@ function SearchField({ onNavigate, autoFocus = false }) {
                                 No matches for “{q.trim()}”
                             </p>
                         ) : (
-                            <ul role="listbox">
+                            <ul id="nav-search-results" role="listbox">
                                 {items.map((p, i) => {
                                     const id = p.id || p._id;
                                     return (
@@ -317,7 +315,12 @@ export default function Navbar() {
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
-    useEffect(() => setIsMenuOpen(false), [pathname]);
+    // Route changed: collapse the menu during render rather than after paint.
+    const [lastPath, setLastPath] = useState(pathname);
+    if (pathname !== lastPath) {
+        setLastPath(pathname);
+        setIsMenuOpen(false);
+    }
 
     const region = session?.user?.region;
     const city = session?.user?.city;

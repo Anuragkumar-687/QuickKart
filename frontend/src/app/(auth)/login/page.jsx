@@ -59,7 +59,7 @@ export default function LoginPage() {
 
             <p className="mt-6 text-center text-sm text-muted-foreground">
                 New to QuickKart?{' '}
-                <Link href="/register" className="font-semibold text-accent hover:underline">Create an account</Link>
+                <Link href="/register" className="font-semibold text-primary hover:underline">Create an account</Link>
             </p>
         </AuthShell>
     );

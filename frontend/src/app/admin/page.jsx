@@ -69,7 +69,7 @@ export default function AdminDashboard() {
                     <p className="mt-1 text-sm text-muted-foreground">{products.length} products in the catalogue</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Link href="/admin/analytics" className="btn btn-outline btn-md">
+                    <Link href="/admin/analytics" className="btn btn-secondary btn-md">
                         <BarChart3 className="h-4 w-4" /> Analytics
                     </Link>
                     <Link href="/admin/products/new" className="btn btn-primary btn-md">

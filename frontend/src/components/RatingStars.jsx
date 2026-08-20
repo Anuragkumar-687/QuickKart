@@ -34,9 +34,18 @@ export default function RatingStars({ rating = 0, count, variant = 'chip', class
         );
     }
 
+    // The chip is colour-coded by score. Painting a 2.3 the same green as a 4.8
+    // would misrepresent it — in this palette green means "good for the buyer".
+    const tone =
+        value >= 3.5
+            ? { backgroundColor: 'var(--savings)', color: 'var(--savings-foreground)' }
+            : value >= 2.5
+              ? { backgroundColor: 'var(--warning)', color: '#1a1204' }
+              : { backgroundColor: 'var(--danger)', color: '#ffffff' };
+
     return (
         <div className={`flex items-center gap-1.5 ${className}`}>
-            <span className="rating-chip">
+            <span className="rating-chip" style={tone}>
                 <span className="num">{value.toFixed(1)}</span>
                 <Star className="h-2.5 w-2.5 fill-current" />
             </span>

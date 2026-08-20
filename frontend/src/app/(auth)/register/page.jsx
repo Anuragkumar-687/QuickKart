@@ -92,7 +92,7 @@ export default function RegisterPage() {
 
             <p className="mt-6 text-center text-sm text-muted-foreground">
                 Already have an account?{' '}
-                <Link href="/login" className="font-semibold text-accent hover:underline">Sign in</Link>
+                <Link href="/login" className="font-semibold text-primary hover:underline">Sign in</Link>
             </p>
         </AuthShell>
     );

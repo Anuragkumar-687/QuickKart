@@ -18,7 +18,7 @@ const DEMAND_STYLES = {
     Low: 'bg-muted text-muted-foreground',
 };
 
-function StatCard({ icon: Icon, label, value, suffix = '', tint = 'text-accent' }) {
+function StatCard({ icon: Icon, label, value, suffix = '', tint = 'text-primary' }) {
     return (
         <div className="card p-5">
             <div className={`mb-3 grid h-10 w-10 place-items-center rounded-xl border bg-card ${tint}`}>
@@ -102,7 +102,7 @@ export default function AnalyticsDashboard() {
 
             {/* Stat cards */}
             <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                <Reveal delay={0}><StatCard icon={Package} label="Total products" value={totalProducts} tint="text-accent" /></Reveal>
+                <Reveal delay={0}><StatCard icon={Package} label="Total products" value={totalProducts} tint="text-primary" /></Reveal>
                 <Reveal delay={0.06}><StatCard icon={AlertTriangle} label="Low-stock items" value={lowStock} tint="text-amber-400" /></Reveal>
                 <Reveal delay={0.12}><StatCard icon={Flame} label="High-demand items" value={highDemand} tint="text-rose-400" /></Reveal>
                 <Reveal delay={0.18}><StatCard icon={RotateCcw} label="Reorder suggestions" value={reorder} tint="text-emerald-400" /></Reveal>
@@ -112,13 +112,13 @@ export default function AnalyticsDashboard() {
             <div className="mt-6 grid gap-5 lg:grid-cols-2">
                 <Reveal>
                     <div className="card h-full p-6">
-                        <h2 className="mb-5 flex items-center gap-2 font-bold text-foreground"><TrendingUp className="h-5 w-5 text-accent" /> Most purchased categories</h2>
+                        <h2 className="mb-5 flex items-center gap-2 font-bold text-foreground"><TrendingUp className="h-5 w-5 text-primary" /> Most purchased categories</h2>
                         <BarList data={categoryData} format={(v) => `${v} units`} />
                     </div>
                 </Reveal>
                 <Reveal delay={0.08}>
                     <div className="card h-full p-6">
-                        <h2 className="mb-5 flex items-center gap-2 font-bold text-foreground"><Eye className="h-5 w-5 text-accent" /> Most viewed products</h2>
+                        <h2 className="mb-5 flex items-center gap-2 font-bold text-foreground"><Eye className="h-5 w-5 text-primary" /> Most viewed products</h2>
                         <BarList data={viewedData} format={(v) => `${v} views`} barClass="bg-violet-500" />
                     </div>
                 </Reveal>
@@ -128,7 +128,7 @@ export default function AnalyticsDashboard() {
                 {/* Inventory health */}
                 <Reveal>
                     <div className="card flex h-full flex-col items-center justify-center p-6 text-center">
-                        <h2 className="mb-4 flex items-center gap-2 self-start font-bold text-foreground"><Boxes className="h-5 w-5 text-accent" /> Inventory health</h2>
+                        <h2 className="mb-4 flex items-center gap-2 self-start font-bold text-foreground"><Boxes className="h-5 w-5 text-primary" /> Inventory health</h2>
                         <ProgressRing value={inStock} max={totalProducts || 1} label="in stock" />
                         <p className="mt-4 text-sm text-muted-foreground">
                             <span className="font-medium text-foreground">{inStock}</span> healthy · <span className="font-medium text-amber-400">{lowStock}</span> low
@@ -139,7 +139,7 @@ export default function AnalyticsDashboard() {
                 {/* Demand forecast */}
                 <Reveal delay={0.08} className="lg:col-span-2">
                     <div className="card h-full p-6">
-                        <h2 className="mb-5 flex items-center gap-2 font-bold text-foreground"><MapPin className="h-5 w-5 text-accent" /> Demand forecast by region</h2>
+                        <h2 className="mb-5 flex items-center gap-2 font-bold text-foreground"><MapPin className="h-5 w-5 text-primary" /> Demand forecast by region</h2>
                         {topForecast.length === 0 ? (
                             <p className="text-sm text-muted-foreground">No purchase data yet — forecasts appear after orders.</p>
                         ) : (
@@ -163,14 +163,14 @@ export default function AnalyticsDashboard() {
             {Object.keys(byRegion).length > 0 && (
                 <Reveal className="mt-6">
                     <div className="card p-6">
-                        <h2 className="mb-5 flex items-center gap-2 font-bold text-foreground"><MapPin className="h-5 w-5 text-accent" /> Top product by region</h2>
+                        <h2 className="mb-5 flex items-center gap-2 font-bold text-foreground"><MapPin className="h-5 w-5 text-primary" /> Top product by region</h2>
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {Object.entries(byRegion).map(([region, list]) => {
                                 const top = list?.[0];
                                 if (!top) return null;
                                 return (
                                     <div key={region} className="rounded-xl border bg-background/40 p-4">
-                                        <p className="mb-1 text-xs uppercase tracking-wide text-accent">{region}</p>
+                                        <p className="mb-1 text-xs uppercase tracking-wide text-primary">{region}</p>
                                         <p className="line-clamp-1 text-sm font-medium text-foreground">{top.product?.name || 'Product'}</p>
                                         <p className="text-xs text-muted-foreground">{top.unitsSold} units sold</p>
                                     </div>
@@ -185,7 +185,7 @@ export default function AnalyticsDashboard() {
             {alerts?.reorderSuggestions?.length > 0 && (
                 <Reveal className="mt-6">
                     <div className="card overflow-hidden">
-                        <div className="border-b px-6 py-4"><h2 className="flex items-center gap-2 font-bold text-foreground"><RotateCcw className="h-5 w-5 text-accent" /> Reorder suggestions</h2></div>
+                        <div className="border-b px-6 py-4"><h2 className="flex items-center gap-2 font-bold text-foreground"><RotateCcw className="h-5 w-5 text-primary" /> Reorder suggestions</h2></div>
                         <div className="overflow-x-auto">
                             <table className="min-w-full text-sm">
                                 <thead>

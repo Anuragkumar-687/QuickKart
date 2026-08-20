@@ -16,7 +16,7 @@ export default function ProgressRing({ value = 0, max = 100, size = 150, stroke 
                     cy={size / 2}
                     r={r}
                     fill="none"
-                    stroke="var(--accent)"
+                    stroke="var(--primary)"
                     strokeWidth={stroke}
                     strokeLinecap="round"
                     strokeDasharray={c}

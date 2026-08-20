@@ -54,7 +54,7 @@ export default function DealHero({ products = [], loading }) {
     }, [index, paused, reduced, slides.length]);
 
     if (loading) {
-        return <div className="skeleton mx-auto h-[320px] w-full max-w-[1400px] rounded-none sm:h-[420px] sm:rounded-2xl" />;
+        return <div className="skeleton mx-auto h-[420px] w-full max-w-[1400px] rounded-none sm:rounded-2xl" />;
     }
     if (slides.length === 0) return null;
 
@@ -72,7 +72,7 @@ export default function DealHero({ products = [], loading }) {
             aria-roledescription="carousel"
             aria-label="Featured deals"
         >
-            <div className="relative h-[340px] sm:h-[420px] lg:h-[460px]">
+            <div className="relative h-[420px] sm:h-[420px] lg:h-[460px]">
                 {webglEnabled ? (
                     <WebGLSlides images={images} index={index} onFail={() => setUseWebGL(false)} />
                 ) : (
@@ -80,15 +80,24 @@ export default function DealHero({ products = [], loading }) {
                 )}
 
                 {/* Copy overlay */}
-                <div className="relative z-10 flex h-full items-center">
-                    <div className="w-full max-w-xl px-6 sm:px-10">
-                        <AnimatePresence mode="wait">
+                <div className="relative z-10 flex h-full items-end pb-20 sm:items-center sm:pb-0">
+                    {/* Sequential, not overlapping: two headlines crossfading on
+                        top of each other is unreadable. The exit is kept short
+                        so the hero is never text-less for long. A reserved
+                        min-height stops the swap from shifting layout. */}
+                    <div className="relative min-h-[210px] w-full max-w-xl px-6 sm:min-h-[248px] sm:px-10">
+                        <AnimatePresence mode="wait" initial={false}>
                             <motion.div
                                 key={slide.id}
                                 initial={{ opacity: 0, y: 14 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.4, ease: [0.25, 0.8, 0.3, 1] }}
+                                exit={{ opacity: 0, y: -8 }}
+                                transition={{
+                                    duration: 0.4,
+                                    ease: [0.25, 0.8, 0.3, 1],
+                                    exit: { duration: 0.18 },
+                                }}
+                                className="absolute inset-x-6 top-0 sm:inset-x-10"
                             >
                                 {slide.category && (
                                     <span
@@ -98,7 +107,7 @@ export default function DealHero({ products = [], loading }) {
                                         {slide.category}
                                     </span>
                                 )}
-                                <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl lg:text-[2.75rem]">
+                                <h2 className="mt-3 text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl lg:text-[2.75rem]">
                                     {slide.name}
                                 </h2>
                                 <p className="mt-3 flex items-baseline gap-2 text-white/90">
@@ -121,19 +130,19 @@ export default function DealHero({ products = [], loading }) {
                         <button
                             onClick={() => go(-1)}
                             aria-label="Previous deal"
-                            className="absolute left-3 top-1/2 z-20 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur transition hover:bg-black/70"
+                            className="absolute left-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur transition hover:bg-black/70 sm:grid"
                         >
                             <ChevronLeft className="h-5 w-5" />
                         </button>
                         <button
                             onClick={() => go(1)}
                             aria-label="Next deal"
-                            className="absolute right-3 top-1/2 z-20 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur transition hover:bg-black/70"
+                            className="absolute right-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur transition hover:bg-black/70 sm:grid"
                         >
                             <ChevronRight className="h-5 w-5" />
                         </button>
 
-                        <div className="absolute bottom-4 left-6 z-20 flex items-center gap-2 sm:left-10">
+                        <div className="absolute bottom-5 left-6 z-20 flex items-center gap-2 sm:bottom-4 sm:left-10">
                             {slides.map((s, i) => (
                                 <button
                                     key={s.id || i}

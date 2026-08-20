@@ -40,39 +40,79 @@ float noise(vec2 p) {
     );
 }
 
-// background-size: cover, in shader form.
-vec2 coverUv(vec2 uv, vec2 res, vec2 img) {
-    if (img.x < 1.0 || img.y < 1.0) return uv;
-    float rs = res.x / res.y;
-    float ri = img.x / img.y;
-    vec2 scale = rs < ri ? vec2(ri / rs, 1.0) : vec2(1.0, rs / ri);
-    return (uv - 0.5) / scale + 0.5;
+// Rounded-rectangle distance, used to draw the light product plate.
+float roundedBox(vec2 p, vec2 b, float r) {
+    vec2 q = abs(p) - b + r;
+    return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+}
+
+// Catalogue art is transparent-background PNG cut-outs, so the product is
+// fitted (contain) into a box on the right and composited over the backdrop
+// using its own alpha. Stretching it to cover would crop the product, and
+// forcing alpha to 1 would paint every transparent pixel black.
+vec4 productSample(sampler2D tex, vec2 img, vec2 uv) {
+    if (img.x < 1.0 || img.y < 1.0) return vec4(0.0);
+
+    float aspect = uRes.x / max(uRes.y, 1.0);
+    float narrow = smoothstep(2.0, 1.15, aspect);
+    vec2 boxCenter = vec2(mix(0.72, 0.5, narrow), mix(0.5, 0.29, narrow));
+    float boxH = mix(0.80, 0.44, narrow);
+    float scale = (boxH * uRes.y) / img.y;
+    vec2 sizeUv = vec2((img.x * scale) / uRes.x, boxH);
+
+    vec2 p = (uv - boxCenter) / sizeUv + 0.5;
+    if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0) return vec4(0.0);
+    return texture2D(tex, p);
 }
 
 void main() {
     float n = noise(vUv * 3.5 + uTime * 0.06);
+    vec2 par = uPointer * 0.008;
+    float aspect = uRes.x / max(uRes.y, 1.0);
 
-    // Wipe edge travels left→right, roughened by noise so it reads as liquid.
+    // Warm, dark backdrop that stays inside the brand palette.
+    vec3 bg = mix(vec3(0.055, 0.052, 0.060), vec3(0.135, 0.100, 0.052), smoothstep(0.0, 1.0, vUv.x));
+
+    // Single soft pool of light behind the product, drifting with the pointer.
+    vec2 aUv = vec2(vUv.x * aspect, vUv.y);
+    vec2 lightPos = vec2(0.72 * aspect, 0.5) + uPointer * 0.03;
+    float glow = 1.0 - smoothstep(0.0, 0.62, distance(aUv, lightPos));
+    bg += vec3(0.20, 0.125, 0.025) * glow * glow;
+
+    // Light plate behind the product. Same reasoning as the product cards:
+    // a dark cut-out on a dark backdrop is unreadable, so give every product
+    // a guaranteed light ground to sit on.
+    // Portrait viewports stack the composition: plate up top, copy beneath.
+    // Side-by-side only works once the hero is meaningfully wider than tall.
+    float narrow = smoothstep(2.0, 1.15, aspect);
+    vec2 plateCenter = vec2(mix(0.71, 0.5, narrow) * aspect, mix(0.5, 0.29, narrow)) + uPointer * 0.006;
+    vec2 plateHalf = vec2(mix(0.255, 0.42, narrow) * aspect, mix(0.42, 0.25, narrow));
+    float d = roundedBox(aUv - plateCenter, plateHalf, 0.05);
+    float plate = 1.0 - smoothstep(0.0, 0.006, d);
+    float plateShadow = 1.0 - smoothstep(-0.02, 0.10, d);
+    bg = mix(bg, bg * 0.45, plateShadow * 0.5);
+    bg = mix(bg, vec3(0.925, 0.918, 0.906), plate);
+
+    // Noise-roughened wipe carries the outgoing product off to the left.
     float edge = uProgress * 1.7 - 0.35;
-    float mask = smoothstep(edge - 0.32, edge + 0.32, vUv.x + (n - 0.5) * 0.45);
-
-    // Displacement peaks mid-transition, so idle frames stay perfectly sharp.
+    float mask = smoothstep(edge - 0.30, edge + 0.30, vUv.x + (n - 0.5) * 0.40);
     float bulge = sin(uProgress * 3.14159);
-    vec2 disp = vec2(n - 0.5) * 0.09 * bulge;
+    vec2 disp = vec2(n - 0.5) * 0.06 * bulge;
 
-    // Slow parallax toward the pointer; tiny, just enough to feel alive.
-    vec2 par = uPointer * 0.012;
+    vec4 a = productSample(uTex0, uImg0, vUv + disp + par);
+    vec4 b = productSample(uTex1, uImg1, vUv - disp + par);
+    vec4 prod = mix(b, a, mask);
 
-    vec4 c0 = texture2D(uTex0, coverUv(vUv + disp + par, uRes, uImg0));
-    vec4 c1 = texture2D(uTex1, coverUv(vUv - disp + par, uRes, uImg1));
-    vec4 color = mix(c1, c0, mask);
+    vec3 color = mix(bg, prod.rgb, clamp(prod.a, 0.0, 1.0));
 
-    // Darken toward the left so the overlaid headline always has contrast.
-    float shade = smoothstep(0.85, 0.05, vUv.x);
-    color.rgb *= mix(1.0, 0.28, shade * 0.92);
-    color.rgb *= 1.0 - 0.25 * smoothstep(0.55, 1.0, distance(vUv, vec2(0.5)));
+    // Hold the left side back so the headline always has contrast. The plate
+    // is excluded so the product never gets dimmed by the copy gradient.
+    float shadeWide = smoothstep(0.70, 0.02, vUv.x);
+    float shadeTall = smoothstep(0.42, 1.0, vUv.y);
+    float shade = mix(shadeWide, shadeTall, narrow) * (1.0 - plate);
+    color *= mix(1.0, 0.62, shade);
 
-    gl_FragColor = vec4(color.rgb, 1.0);
+    gl_FragColor = vec4(color, 1.0);
 }
 `;
 
@@ -146,6 +186,8 @@ export default function WebGLSlides({ images, index, onFail }) {
                     (tex) => {
                         tex.colorSpace = THREE.SRGBColorSpace;
                         tex.minFilter = THREE.LinearFilter;
+                        tex.wrapS = THREE.ClampToEdgeWrapping;
+                        tex.wrapT = THREE.ClampToEdgeWrapping;
                         tex.generateMipmaps = false;
                         resolve(tex);
                     },
@@ -158,9 +200,12 @@ export default function WebGLSlides({ images, index, onFail }) {
             renderer, scene, camera, mesh, uniforms, loadTexture,
             textures: new Map(),
             current: -1,
+            pending: null,
+            tween: null,
             raf: 0,
             clock: new THREE.Clock(),
-            visible: true,
+            inView: true,
+            pageVisible: typeof document === 'undefined' || !document.hidden,
             disposed: false,
         };
         stateRef.current = state;
@@ -168,16 +213,16 @@ export default function WebGLSlides({ images, index, onFail }) {
         const render = () => {
             if (state.disposed) return;
             state.raf = requestAnimationFrame(render);
-            if (!state.visible) return;
+            if (!state.inView || !state.pageVisible) return;
             uniforms.uTime.value = state.clock.getElapsedTime();
             renderer.render(scene, camera);
         };
         state.raf = requestAnimationFrame(render);
 
         // Stop drawing when the hero scrolls away or the tab is hidden.
-        const io = new IntersectionObserver(([e]) => { state.visible = e.isIntersecting; }, { threshold: 0.01 });
+        const io = new IntersectionObserver(([e]) => { state.inView = e.isIntersecting; }, { threshold: 0.01 });
         io.observe(host);
-        const onVisibility = () => { state.visible = !document.hidden; };
+        const onVisibility = () => { state.pageVisible = !document.hidden; };
         document.addEventListener('visibilitychange', onVisibility);
 
         const ro = new ResizeObserver(() => {
@@ -238,24 +283,42 @@ export default function WebGLSlides({ images, index, onFail }) {
 
         let cancelled = false;
 
+        // Land any in-flight transition on its end state before starting a new
+        // one, so the stage can never be left showing a half-finished wipe.
+        const settle = () => {
+            const { uniforms } = state;
+            if (state.tween) {
+                state.tween.kill();
+                state.tween = null;
+            }
+            if (state.pending !== null && uniforms.uTex1.value) {
+                uniforms.uTex0.value = uniforms.uTex1.value;
+                uniforms.uImg0.value.copy(uniforms.uImg1.value);
+                state.current = state.pending;
+                state.pending = null;
+            }
+            uniforms.uProgress.value = 0;
+        };
+
         const apply = (tex) => {
             if (cancelled || state.disposed) return;
+            settle();
+
             const { uniforms } = state;
             uniforms.uTex1.value = tex;
             uniforms.uImg1.value.set(tex.image.width, tex.image.height);
             uniforms.uProgress.value = 0;
+            state.pending = index;
 
-            gsap.to(uniforms.uProgress, {
+            state.tween = gsap.to(uniforms.uProgress, {
                 value: 1,
                 duration: 1.15,
                 ease: 'power2.inOut',
+                overwrite: true,
                 onComplete: () => {
-                    if (cancelled || state.disposed) return;
-                    // Incoming slide becomes the resting slide.
-                    uniforms.uTex0.value = tex;
-                    uniforms.uImg0.value.copy(uniforms.uImg1.value);
-                    uniforms.uProgress.value = 0;
-                    state.current = index;
+                    if (state.disposed) return;
+                    state.tween = null;
+                    settle();
                 },
             });
         };
@@ -271,8 +334,9 @@ export default function WebGLSlides({ images, index, onFail }) {
                     apply(tex);
                 })
                 .catch(() => {
-                    // A single bad image shouldn't kill the stage; just skip it.
-                    if (!cancelled) state.current = index;
+                    // A single bad image shouldn't kill the stage; just skip it
+                    // so the next slide change still transitions from here.
+                    if (!cancelled && !state.disposed) state.current = index;
                 });
         }
 

@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 
 /** Animated horizontal bar list. data: [{ label, value }]. */
-export default function BarList({ data = [], format = (v) => v, barClass = 'bg-accent' }) {
+export default function BarList({ data = [], format = (v) => v, barClass = 'bg-primary' }) {
     const max = Math.max(1, ...data.map((d) => d.value || 0));
     if (data.length === 0) return <p className="text-sm text-muted-foreground">No data yet.</p>;
     return (
