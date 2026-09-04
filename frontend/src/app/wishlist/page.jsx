@@ -35,7 +35,7 @@ export default function WishlistPage() {
         <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-6">
             <div className="card overflow-hidden">
                 <div className="flex items-baseline justify-between border-b px-4 py-3.5 sm:px-5">
-                    <h1 className="flex items-center gap-2 text-lg font-bold tracking-tight">
+                    <h1 className="flex items-center gap-2 text-lg font-bold tracking-tight select-none">
                         <Heart className="h-5 w-5 fill-current text-[var(--danger)]" />
                         My wishlist
                     </h1>
